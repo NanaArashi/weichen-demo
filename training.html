@@ -1024,6 +1024,16 @@ body[data-arm="C"] .atlas { display: none !important; }
       toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2400);
     }
 
+    var modalQueue = [];
+    var pendingScoreCfg = null;
+    function pumpModalQueue() {
+      if ($("mask").classList.contains("show")) return;
+      var cfg = modalQueue.shift();
+      if (cfg) openModal(cfg);
+    }
+    function openQueued(cfg) {
+      if ($("mask").classList.contains("show")) modalQueue.push(cfg); else openModal(cfg);
+    }
     function openModal(cfg) {
       const bodyEl = $("mBody");
       $("mIcon").textContent = cfg.icon || "🌿";
@@ -1039,7 +1049,7 @@ body[data-arm="C"] .atlas { display: none !important; }
         const b = document.createElement("button");
         b.className = "mbtn " + (a.primary ? "primary" : "ghost");
         b.textContent = a.label;
-        b.onclick = a.on;
+        b.onclick = function () { if (a.on) a.on(); pumpModalQueue(); };
         if (cfg.scrollLock && a.primary) b.disabled = true;
         box.appendChild(b);
         btns.push({ el: b, primary: !!a.primary });
@@ -1113,8 +1123,11 @@ body[data-arm="C"] .atlas { display: none !important; }
     }
 
     /* ============ 2.1 版本简介：进入练习前致谢 + 当前版本一句话说明 ============ */
+    function flushPendingScore() {
+      if (pendingScoreCfg) { var c = pendingScoreCfg; pendingScoreCfg = null; openQueued(c); }
+    }
     function showIntro() {
-      if (state.introShown) return;
+      if (state.introShown) { flushPendingScore(); return; }
       state.introShown = true; saveState();
       var arm = armNow();
       var body;
@@ -1130,7 +1143,7 @@ body[data-arm="C"] .atlas { display: none !important; }
         title: "感谢参与，先了解一下你的版本",
         body: body,
         closable: false,
-        actions: [{ label: "开始练习", primary: true, on: closeModal }]
+        actions: [{ label: "开始练习", primary: true, on: function () { closeModal(); flushPendingScore(); } }]
       });
     }
 
@@ -1772,15 +1785,13 @@ body[data-arm="C"] .atlas { display: none !important; }
       if (shown) return;
       try { localStorage.setItem("weichen_assess_shown", "1"); } catch (e) {}
       if (window.WC) WC.track("assess_bridge", { y: a.y, s: a.s, levelY: a.levelY });
-      setTimeout(function () {
-        openModal({
-          icon: "🌱",
-          title: "上次的初筛结果已经带过来了",
-          body: "清洁困扰自评：" + a.y + " 分（" + a.levelY + "）\n情绪状态自评：" + a.s + " 分（" + a.levelS + "）\n\n这只是初筛参考，不是诊断。练习仍从 Lv.1 开始，你不必从中间起步。",
-          closable: true,
-          actions: [{ label: "知道了，开始", primary: true, on: function () { closeModal(); } }]
-        });
-      }, 900);
+      pendingScoreCfg = {
+        icon: "🌱",
+        title: "上次的初筛结果已经带过来了",
+        body: "清洁困扰自评：" + a.y + " 分（" + a.levelY + "）\n情绪状态自评：" + a.s + " 分（" + a.levelS + "）\n\n这只是初筛参考，不是诊断。练习仍从 Lv.1 开始，你不必从中间起步。",
+        closable: true,
+        actions: [{ label: "知道了，开始", primary: true, on: function () { closeModal(); } }]
+      };
     })();
     window.addEventListener("resize", function () { if (chartInstance) chartInstance.resize(); });
     if (!state.consent) ensureConsent(null); else showIntro();

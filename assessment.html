@@ -627,6 +627,7 @@
     };
 
     let state = { active: "ybocs", step: 0, answers: { ybocs: [], sds: [] } };
+    let advancing = false;
 
     function switchTab(key) {
       state.active = key;
@@ -639,6 +640,7 @@
     }
 
     function selectOption(value) {
+      if (advancing) return;
       const scale = scales[state.active];
       state.answers[state.active][state.step] = value;
       if (window.WC) WC.answer(state.active + ":" + state.step, value, { scale: state.active, idx: state.step });
@@ -648,11 +650,20 @@
         showModal("安全提醒", "系统检测到高危信号。如果你此刻很痛苦，请立刻拨打心理援助热线：400-161-9995。你的安全永远是第一位。", "🤍");
         return;
       }
-      render();
-      // ✅ 新增：选中后延迟自动进入下一题，220ms 留给选中高亮动画
+      advancing = true;
+      markSelected(value);
+      // 选中后短暂停顿留给高亮反馈，再进下一题；全程只在换题时渲染一次
       setTimeout(()=>{
         nextStep();
-      }, 220);
+        advancing = false;
+      }, 160);
+    }
+
+    function markSelected(value) {
+      const list = document.getElementById("optionList");
+      Array.prototype.forEach.call(list.children, function (item) {
+        item.classList.toggle("selected", item._val === value);
+      });
     }
 
     function nextStep(){
@@ -706,6 +717,7 @@
     }
 
     function prev() {
+      advancing = false;
       if (state.step > 0) {
         if (window.WC) WC.track("item_revisit", { scale: state.active, from: state.step });
         state.step--;
@@ -750,6 +762,7 @@
           <span class="text-emerald-800 font-medium text-[15px]">${opt.label}</span>
           <span class="text-emerald-600/75 text-sm">${opt.val} 分</span>
         `;
+        item._val = opt.val;
         item.onclick = () => selectOption(opt.val);
         list.appendChild(item);
       });

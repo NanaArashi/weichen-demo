@@ -1872,6 +1872,7 @@
     <div class="bottom-action">
       <a href="javascript:void(0)" class="go-btn-primary" onclick="openConsentGate()">迈出第一步 <span>→</span></a>
       <p class="footer-disclaimer">微尘 WEI CHEN，数字辅助干预工具，不能替代专业诊断与治疗。如处于急性危机期请拨打心理援助热线 400‑161‑9995。</p>
+      <p style="margin-top:8px;font-size:12px;color:#9db5b0;"><a href="javascript:void(0)" onclick="resetDemo()" style="color:inherit;text-decoration:underline dotted;">重置本次体验（清除本机研究选择，便于重新演示）</a></p>
     </div>
   </div>
 
@@ -2033,6 +2034,13 @@
     function consentNo() {
       if (window.WC) { WC.setConsent("no"); WC.setArm("A"); }
       goRegister();
+    }
+    function resetDemo() {
+      if (!confirm("将清除本机保存的研究选择、编号与埋点记录，练习与测评进度保留。确定重置？")) return;
+      try {
+        ["wc.consent", "wc.arm", "wc.pid", "wc.sid", "wc.events", "wc.seq", "wc.flushed"].forEach(function (k) { localStorage.removeItem(k); });
+      } catch (e) {}
+      location.reload();
     }
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') closeErpModal();

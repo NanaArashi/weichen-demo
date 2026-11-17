@@ -2,10 +2,20 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="refresh" content="0; url=home.html">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>微尘</title>
+  <script>
+    /* 跳转主页时保留 ?arm= 组别参数与页面锚点 */
+    (function () {
+      location.replace("home.html" + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=home.html"></noscript>
 </head>
 <body>
-  <p>正在进入微尘…<a href="home.html">点击进入</a></p>
+  <p>正在进入微尘…<a id="enter" href="home.html">点击进入</a></p>
+  <script>
+    document.getElementById('enter').href = "home.html" + location.search + location.hash;
+  </script>
 </body>
 </html>

@@ -286,6 +286,13 @@
     .tile.on .tile-icon { color: var(--ink); }
     .tile.on .tile-name { color: #14495a; font-weight: 700; }
     .tile.on:hover { transform: translateY(-3px); box-shadow: var(--sh-hover); }
+    .tile-cond { margin-top: 4px; font-size: 11.5px; color: var(--meta); line-height: 1.45; }
+    .tile:not(.on) .tile-name { color: #6d8a93; font-weight: 600; }
+    .atlas-row { padding: 10px 0; border-bottom: 1px dashed rgba(20, 73, 90, 0.14); }
+    .atlas-row:last-child { border-bottom: 0; }
+    .atlas-row-main { font-size: 15px; font-weight: 700; color: #14495a; }
+    .atlas-row.locked .atlas-row-main { color: #6d8a93; font-weight: 600; }
+    .atlas-cond { margin-top: 3px; font-size: 12.5px; color: var(--meta); line-height: 1.5; }
 
     /* ========== 图表 ========== */
     .chart-card { margin-top: 12px; }
@@ -980,12 +987,12 @@ body[data-arm="C"] .atlas { display: none !important; }
       { lv: 6, name: "不带消毒喷雾出门", desc: "不带消毒喷雾下楼取一次快递，回来正常洗手一次。", mins: 20 }
     ];
     const ACH = [
-      { id: "first", icon: "🌱", name: "初次相遇" },
-      { id: "storm", icon: "🌪", name: "直面风暴" },
-      { id: "bg", icon: "🌙", name: "后台安心" },
-      { id: "streak3", icon: "🔥", name: "三日之约" },
-      { id: "hour", icon: "💧", name: "静水长流" },
-      { id: "climb", icon: "🪜", name: "拾级而上" }
+      { id: "first", icon: "🌱", name: "初次相遇", cond: "完成第 1 次练习" },
+      { id: "storm", icon: "🌪", name: "直面风暴", cond: "单次练习中焦虑分最高达到 8 分及以上" },
+      { id: "bg", icon: "🌙", name: "后台安心", cond: "练习中途切到后台，再返回页面" },
+      { id: "streak3", icon: "🔥", name: "三日之约", cond: "连续打卡满 3 天" },
+      { id: "hour", icon: "💧", name: "静水长流", cond: "累计练习满 60 分钟" },
+      { id: "climb", icon: "🪜", name: "拾级而上", cond: "成功进阶到下一级阶梯" }
     ];
     const DEFAULT_STATE = {
       consent: false, totalMinutes: 0, totalSessions: 0,
@@ -1184,16 +1191,23 @@ body[data-arm="C"] .atlas { display: none !important; }
     }
     function openAtlas() {
       if (window.WC) WC.track("atlas_open", { got: (state.ach || []).length, total: ACH.length });
+      const rows = ACH.map(function (a) {
+        var got = (state.ach || []).indexOf(a.id) !== -1;
+        var main = (got ? a.icon + " " + a.name : "？ " + a.name);
+        var cond = got ? "已点亮" : ("解锁条件：" + a.cond);
+        return '<div class="atlas-row' + (got ? "" : " locked") + '">' +
+          '<div class="atlas-row-main">' + main + "</div>" +
+          '<div class="atlas-cond">' + cond + "</div>" +
+        "</div>";
+      }).join("");
       openModal({
         icon: "✨",
         title: "我的星光图鉴（" + (state.ach || []).length + " / " + ACH.length + "）",
-        body: ACH.map(function (a) {
-          var got = (state.ach || []).indexOf(a.id) !== -1;
-          return got ? (a.icon + " " + a.name) : "？ 未点亮";
-        }).join("\n"),
+        body: "",
         closable: true,
         actions: [{ label: "回到练习", primary: true, on: closeModal }]
       });
+      $("mBody").innerHTML = rows;
     }
 
     function renderHome() {
@@ -1274,7 +1288,8 @@ body[data-arm="C"] .atlas { display: none !important; }
         const got = state.ach.indexOf(a.id) !== -1;
         return '<div class="tile' + (got ? " on" : "") + '">' +
           '<div class="tile-orb"><span class="tile-icon">' + (got ? a.icon : "?") + '</span></div>' +
-          '<div class="tile-name">' + (got ? a.name : "未点亮") + '</div>' +
+          '<div class="tile-name">' + a.name + '</div>' +
+          (got ? "" : '<div class="tile-cond">' + a.cond + "</div>") +
         '</div>';
       }).join("");
     }

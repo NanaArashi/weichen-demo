@@ -1646,7 +1646,7 @@
         <a id="linkHome" href="#top">主页</a>
         <a id="linkProduct" href="#section-product">产品</a>
         <a id="linkAbout" href="#section-about">关于我们</a>
-        <a href="register.html">在线使用</a>
+        <a href="javascript:void(0)" onclick="openConsentGate()">在线使用</a>
       </div>
       <button class="btn-ai-companion" onclick="toggleAiFloatWindow()">
         <span class="material-symbols-outlined">chat_bubble</span>
@@ -1870,7 +1870,7 @@
       <div id="barChart"></div>
     </div>
     <div class="bottom-action">
-      <a href="register.html" class="go-btn-primary">迈出第一步 <span>→</span></a>
+      <a href="javascript:void(0)" class="go-btn-primary" onclick="openConsentGate()">迈出第一步 <span>→</span></a>
       <p class="footer-disclaimer">微尘 WEI CHEN，数字辅助干预工具，不能替代专业诊断与治疗。如处于急性危机期请拨打心理援助热线 400‑161‑9995。</p>
     </div>
   </div>
@@ -1957,7 +1957,43 @@
 
       <div class="erp-modal-foot">
         <button class="ghost" onclick="closeErpModal()">先看看</button>
-        <button class="primary" onclick="location.href='register.html'">开始体验自助版 →</button>
+        <button class="primary" onclick="openConsentGate()">开始体验自助版 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 研究参与确认弹窗（进入注册前必选） ========== -->
+  <div class="erp-modal-mask" id="consentMask">
+    <div class="erp-modal" role="dialog" aria-modal="true" aria-labelledby="consentTitle">
+      <div class="erp-modal-head">
+        <span class="eyebrow">研究参与确认</span>
+        <h3 id="consentTitle">开始前，请确认是否参与研究记录</h3>
+      </div>
+      <div class="erp-modal-body">
+        <div class="erp-block">
+          <div class="erp-block-title"><span class="orb"><span class="material-symbols-outlined">info</span></span>这是什么工具</div>
+          <p>微尘是基于 ERP（暴露与反应预防）原理的自助练习工具，帮助你用「不立刻重复检查、允许轻微不适」的方式逐步降低对脏污的恐惧反应。它不提供医疗诊断，也不能替代专业治疗与医师指导。</p>
+        </div>
+        <div class="erp-block">
+          <div class="erp-block-title"><span class="orb"><span class="material-symbols-outlined">rule_settings</span></span>两种选择</div>
+          <div class="erp-trio">
+            <div class="cell">
+              <b>同意参与研究</b>
+              <span>你的行为记录（练习次数、时长、焦虑值、是否中途切出页面）在后续接入研究服务器后，仅用于本项目研究分析；文字输入只记录字数、不保存原文；你可以随时要求删除全部数据。</span>
+            </div>
+            <div class="cell">
+              <b>不同意，仅本地试用</b>
+              <span>练习进度只保存在你本机浏览器，不产生任何研究记录；界面自动使用无打卡激励的柔性版本，练习内容与其他版本一致。</span>
+            </div>
+          </div>
+        </div>
+        <div class="erp-block">
+          <div class="erp-note">暴露练习中焦虑短时间上升、心慌或想立刻去洗手属正常反应，通常数分钟内回落；若出现强烈不适、晕眩或情绪失控，请立即停止并寻求专业帮助。如有伤害自己的念头，请拨打心理援助热线 400-161-9995。</div>
+        </div>
+      </div>
+      <div class="erp-modal-foot">
+        <button class="ghost" onclick="consentNo()">不同意，仅本地试用</button>
+        <button class="primary" onclick="consentYes()">同意参与研究</button>
       </div>
     </div>
   </div>
@@ -1976,6 +2012,27 @@
     }
     function onErpMaskClick(e) {
       if (e.target === document.getElementById('erpModalMask')) closeErpModal();
+    }
+
+    // =========研究参与确认：同意保留链接指定版本；不同意降级 A、不写研究记录=========
+    function goRegister() {
+      var q = location.search || "";
+      location.href = "register.html" + q;
+    }
+    function openConsentGate() {
+      if (window.WC && WC.getConsent()) { goRegister(); return; }
+      closeErpModal();
+      var mask = document.getElementById('consentMask');
+      mask.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+    function consentYes() {
+      if (window.WC) WC.setConsent("yes");
+      goRegister();
+    }
+    function consentNo() {
+      if (window.WC) { WC.setConsent("no"); WC.setArm("A"); }
+      goRegister();
     }
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') closeErpModal();

@@ -995,7 +995,7 @@ body[data-arm="C"] .atlas { display: none !important; }
       { id: "climb", icon: "🪜", name: "拾级而上", cond: "成功进阶到下一级阶梯" }
     ];
     const DEFAULT_STATE = {
-      consent: false, totalMinutes: 0, totalSessions: 0,
+      consent: false, introShown: false, totalMinutes: 0, totalSessions: 0,
       level: 1, levelCounts: {}, ach: [], aiQuota: 3,
       streak: 0, lastDay: null, history: [], checkins: []
     };
@@ -1096,18 +1096,41 @@ body[data-arm="C"] .atlas { display: none !important; }
           "四、安全底线\n" +
           "任何时候，你的安全都高于练习进度。如出现伤害自己的念头，请立刻拨打心理援助热线 400-161-9995，或联系身边可信任的人。\n\n" +
           "五、你的数据\n" +
-          "默认情况下，你的记录（练习次数、焦虑值、成就）只保存在本机浏览器。如果通过我们提供的在线地址使用，行为数据（何时开始、练了多久、焦虑值、是否中途切出页面）会上传到本项目的研究服务器，仅用于研究分析；你输入的文字内容不会被保存，只记录字数。你可以随时要求删除你的全部数据。\n\n" +
-          "六、关于两种版本\n" +
-          "本次试用有两种界面版本（带每日打卡激励 / 不带打卡激励），你会被随机分到其中一种。两版练习内容完全相同，只在「是否显示打卡、连续天数、成就」上不同，都不影响你的权益与数据安全。\n\n" +
+          "你的记录（练习次数、焦虑值、成就）目前只保存在本机浏览器；若你已在开始前同意参与研究，后续接入研究服务器后，行为数据（何时开始、练了多久、焦虑值、是否中途切出页面）将仅用于研究分析；你输入的文字内容不会被保存，只记录字数。你可以随时要求删除你的全部数据。\n\n" +
+          "六、关于不同版本\n" +
+          "本次试用有不同界面版本（带每日打卡激励 / 不带打卡激励 / 无进度反馈），练习内容完全相同，只在进度反馈的呈现方式上不同，都不影响你的权益与数据安全。\n\n" +
           "读完以上内容，并确认你理解：这是一项学生科研性质的可行性研究中的辅助练习，不是治疗，也不能替代专业帮助。",
         closable: false,
         actions: [{
           label: "我已知晓并开始练习", primary: true,
           on: function () {
             state.consent = true; saveState(); closeModal();
+            showIntro();
             if (cb) cb();
           }
         }]
+      });
+    }
+
+    /* ============ 2.1 版本简介：进入练习前致谢 + 当前版本一句话说明 ============ */
+    function showIntro() {
+      if (state.introShown) return;
+      state.introShown = true; saveState();
+      var arm = armNow();
+      var body;
+      if (arm === "B") {
+        body = "感谢参与。你当前使用的是「游戏化反馈」版本：在相同练习基础上，加入打卡、连续天数与图鉴激励；练习任务、阶梯进阶与焦虑自评和其他版本完全一致。";
+      } else if (arm === "C") {
+        body = "感谢参与。你当前使用的是「无进度反馈」先导版本：只保留练习任务与焦虑自评，不展示进度曲线、练习计数与成就。";
+      } else {
+        body = "感谢参与。你当前使用的是「柔性反馈」版本：练习记录与成长反馈温和呈现，没有打卡、连续天数与成就弹窗。";
+      }
+      openModal({
+        icon: "🌿",
+        title: "感谢参与，先了解一下你的版本",
+        body: body,
+        closable: false,
+        actions: [{ label: "开始练习", primary: true, on: closeModal }]
       });
     }
 
@@ -1144,6 +1167,8 @@ body[data-arm="C"] .atlas { display: none !important; }
           try { localStorage.setItem("wc.arm", q); } catch (e) {}
         }
       } catch (e) {}
+      /* 未同意参与研究：一律降级 A 柔性版，不论链接指定哪个版本 */
+      if (window.WC && WC.getConsent() === "no") return "A";
       if (q) return q;
       var a = "";
       try { a = (localStorage.getItem("wc.arm") || "").toUpperCase(); } catch (e) {}
@@ -1284,12 +1309,13 @@ body[data-arm="C"] .atlas { display: none !important; }
     }
 
     function renderAtlas() {
+      const showCond = armNow() === "B";   // A 组隐性图鉴：未点亮条目不展示解锁条件
       $("atlasBox").innerHTML = ACH.map(function (a) {
         const got = state.ach.indexOf(a.id) !== -1;
         return '<div class="tile' + (got ? " on" : "") + '">' +
           '<div class="tile-orb"><span class="tile-icon">' + (got ? a.icon : "?") + '</span></div>' +
           '<div class="tile-name">' + a.name + '</div>' +
-          (got ? "" : '<div class="tile-cond">' + a.cond + "</div>") +
+          (got || !showCond ? "" : '<div class="tile-cond">' + a.cond + "</div>") +
         '</div>';
       }).join("");
     }
@@ -1757,7 +1783,7 @@ body[data-arm="C"] .atlas { display: none !important; }
       }, 900);
     })();
     window.addEventListener("resize", function () { if (chartInstance) chartInstance.resize(); });
-    if (!state.consent) ensureConsent(null);
+    if (!state.consent) ensureConsent(null); else showIntro();
   </script>
 
 <script>

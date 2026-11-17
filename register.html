@@ -637,8 +637,10 @@
                 
                 if (window.WC) {
                     WC.setPid(account);
-                    /* 正式实验：A(柔性) / B(游戏化) 随机各 50%，组别写进每条数据 */
-                    if (!WC.getArm()) WC.assignArm();
+                    var c = WC.getConsent();
+                    if (!c) { location.href = "home.html" + location.search; return; }
+                    if (c === "no") WC.setArm("A");
+                    else if (!WC.getArm()) WC.assignArm();
                     WC.track('register_submit', {
                         pidLen: account.length,
                         ageBand: ageBandOf(document.getElementById('age').value)
@@ -721,6 +723,6 @@
 })();
 </script>
 
-<script>if (window.WC) WC.init({ page: "register" });</script>
+<script>if (window.WC) { WC.init({ page: "register" }); if (!WC.getConsent()) location.replace("home.html" + location.search); }</script>
 </body>
 </html>

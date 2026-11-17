@@ -27,6 +27,7 @@
     sid: "wc.sid",
     pid: "wc.pid",
     arm: "wc.arm",
+    consent: "wc.consent",
     ev: "wc.events",
     seq: "wc.seq",
     flushed: "wc.flushed"
@@ -97,6 +98,8 @@
 
   /* ---------- 事件写入 ---------- */
   function push(evt, payload, q) {
+    /* 未同意参与研究：不写入任何研究事件（本机练习进度由各页面自行保存） */
+    if (ls(K.consent) === "no") return null;
     var id = ensureId();
     var seq = (parseInt(ls(K.seq) || "0", 10) || 0) + 1;
     ls(K.seq, String(seq));
@@ -155,7 +158,7 @@
       var id = ensureId();
       if (!id.sid) ls(K.sid, uid());
       ready = true;
-      WC.track("page_view", { href: (location.pathname || "").split("/").pop(), ref: document.referrer ? 1 : 0 });
+      if (ls(K.consent) === "yes") WC.track("page_view", { href: (location.pathname || "").split("/").pop(), ref: document.referrer ? 1 : 0 });
       WC._watchHidden();
       if (WC_CONFIG.endpoint && !WC._timer) {
         WC._timer = setInterval(function () { WC.flush(false); }, Math.max(5000, WC_CONFIG.flushMs || 20000));
@@ -173,6 +176,9 @@
       return ls(K.arm);
     },
     getArm: function () { return (ls(K.arm) || "").toUpperCase(); },
+    setConsent: function (v) { ls(K.consent, v === "yes" ? "yes" : "no"); return ls(K.consent); },
+    getConsent: function () { return (ls(K.consent) || "").toLowerCase(); },
+    hasConsent: function () { return ls(K.consent) === "yes"; },
 
     /* 通用事件 */
     track: function (evt, payload) {

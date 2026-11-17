@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>微尘干预平台 · 前置评估</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23287480'/%3E%3Ccircle cx='32' cy='26' r='9' fill='%23e9f7f7'/%3E%3Cpath d='M14 50c6-10 12-14 18-14s12 4 18 14' fill='none' stroke='%23e9f7f7' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script src="libs/tailwind.js"></script>
+  <link rel="stylesheet" href="libs/material-symbols.css">
+
+  <style>
+    @font-face {
+      font-family: "AliPuHui";
+      src: url("fonts/alipuhui.woff2") format("woff2");
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "SmileySans";
+      src: url("fonts/smileysans.woff2") format("woff2");
+      font-display: swap;
+    }
+
+    :root {
+      --brand: #287480;
+      --brand-deep: #1f5c66;
+      --glass-bg: linear-gradient(148deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.2) 46%, rgba(255, 255, 255, 0.35) 100%);
+      --glass-blur: blur(22px) saturate(170%);
+      --glass-border: 1px solid rgba(255, 255, 255, 0.55);
+      --glass-shadow: 0 14px 44px -18px rgba(23, 70, 88, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.62);
+    }
+
+    * { font-family: "AliPuHui", "PingFang SC", sans-serif; box-sizing: border-box; }
+
+    body {
+      background-image: url("主页1bg.jpg");
+      background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed;
+      min-height: 100vh; padding-top: 96px; margin: 0;
+      color: #17323c; -webkit-font-smoothing: antialiased;
+    }
+
+    /* 柔光层 */
+    .ambient {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background: radial-gradient(circle at 10% 14%, rgba(150, 215, 222, 0.22), transparent 42%),
+                  radial-gradient(circle at 90% 82%, rgba(255, 214, 170, 0.16), transparent 46%);
+    }
+
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px 40px; position: relative; z-index: 1; }
+
+    /* 替换原有的 watercolor 为统一的毛玻璃 */
+    .watercolor {
+      background: var(--glass-bg) !important;
+      backdrop-filter: var(--glass-blur) !important;
+      -webkit-backdrop-filter: var(--glass-blur) !important;
+      border: var(--glass-border) !important;
+      box-shadow: var(--glass-shadow) !important;
+    }
+
+    /* 导航栏 */
+    .nav {
+      position: fixed; top: 0; left: 0; width: 100%;
+      display: flex; justify-content: space-between; align-items: center; gap: 16px;
+      padding: 16px 32px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.30), rgba(255, 255, 255, 0.16));
+      backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.45);
+      box-shadow: 0 8px 30px -18px rgba(23, 70, 88, 0.35);
+      z-index: 99;
+    }
+    .nav-link-group { display: flex; align-items: center; gap: 4px; }
+    .nav a { margin: 0 10px; font-weight: 500; font-size: 16px; color: #245060; text-decoration: none; transition: 0.3s; }
+    .nav a:hover { color: var(--brand); }
+    
+    /* AI按钮与弹窗 (同主页) */
+    .btn-ai-companion {
+      display: inline-flex; align-items: center; gap: 6px; min-width: 150px; padding: 9px 16px; border-radius: 13px;
+      border: 1px solid rgba(255, 200, 145, 0.65); background: linear-gradient(135deg, rgba(255, 232, 202, 0.72), rgba(255, 206, 152, 0.62));
+      backdrop-filter: blur(16px); color: #6d4a1a; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.3s;
+    }
+    .btn-ai-companion:hover { transform: translateY(-2px); }
+    .ai-float-window {
+      position: absolute; top: calc(100% + 12px); right: 32px; width: 340px;
+      background: rgba(255, 251, 245, 0.97); backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 186, 110, 0.4); border-radius: 18px;
+      box-shadow: 0 12px 32px rgba(255, 170, 90, 0.18);
+      z-index: 100; display: none; flex-direction: column; overflow: hidden;
+    }
+    .ai-float-window.show { display: flex; }
+    .ai-float-header { padding: 14px 18px; background: linear-gradient(135deg, #ffd9a8, #ffc07a); color: #7a4f18; display: flex; align-items: center; gap: 8px; }
+    .ai-float-header .close-btn { margin-left: auto; cursor: pointer; font-size: 20px; }
+    .ai-float-content { padding: 18px; }
+    #aiMoodInput { width: 100%; min-height: 80px; padding: 10px; border-radius: 12px; border: 1px solid rgba(255,186,110,0.5); outline: none; resize: vertical; }
+    .btn-send-ai { width: 100%; margin-top: 10px; padding: 10px; border-radius: 12px; background: #ffc98a; color: #6b4212; font-weight: bold; cursor: pointer; }
+
+    /* 覆盖 Tailwind 的原色为青绿系 */
+    .text-emerald-800 { color: #0d3b4a !important; }
+    .text-emerald-700\/75 { color: rgba(23, 56, 60, 0.75) !important; }
+    .text-emerald-700 { color: var(--brand) !important; }
+    .text-emerald-600\/85 { color: rgba(40, 116, 128, 0.85) !important; }
+    .bg-emerald-100 { background-color: rgba(40, 116, 128, 0.15) !important; }
+    .text-teal-600 { color: #3b9988 !important; }
+    
+    .tab-active { background: linear-gradient(135deg, #2f8390, var(--brand)) !important; color: white !important; box-shadow: 0 4px 12px rgba(40,116,128,0.3); }
+    .btn-next { background: var(--brand); transition: 0.3s; }
+    .btn-next:hover:not(:disabled) { background: var(--brand-deep); transform: translateY(-1px); }
+    
+    .option-item {
+      border: 1px solid rgba(40, 116, 128, 0.18);
+      transition: transform 0.2s, background 0.2s, border-color 0.2s;
+    }
+    .option-item:hover { border-color: rgba(40, 116, 128, 0.45); background: rgba(40, 116, 128, 0.05); transform: translateX(4px); }
+    .option-item.selected { border-color: var(--brand); background-color: rgba(40, 116, 128, 0.1); font-weight: 600; transform: translateX(4px); }
+    
+    /* 题目切换动画 */
+    .fade-enter { animation: fadeIn 0.4s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+    /* 自定义弹窗 */
+    .custom-modal-mask {
+      position: fixed; inset: 0; z-index: 999; display: flex; align-items: center; justify-content: center;
+      background: rgba(23, 50, 60, 0.4); backdrop-filter: blur(4px);
+      opacity: 0; visibility: hidden; transition: 0.3s;
+    }
+    .custom-modal-mask.show { opacity: 1; visibility: visible; }
+    .custom-modal-box {
+      background: var(--glass-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      border: 1px solid #fff; border-radius: 24px; padding: 32px 28px; max-width: 380px; width: 90%;
+      text-align: center; box-shadow: 0 24px 48px rgba(0,0,0,0.1);
+      transform: translateY(20px) scale(0.95); transition: 0.3s cubic-bezier(0.22, 0.8, 0.3, 1);
+    }
+    .custom-modal-mask.show .custom-modal-box { transform: translateY(0) scale(1); }
+    .btn-modal-close {
+      width: 100%; padding: 12px; border-radius: 12px; background: var(--brand); color: white;
+      font-weight: 600; margin-top: 24px; cursor: pointer; transition: 0.2s;
+    }
+    .btn-modal-close:hover { background: var(--brand-deep); }
+
+    /* ================================================================
+       可读性增强层（Readability Layer）
+       只覆写 颜色 / 字重 / 毛玻璃透明度 / placeholder
+       —— 不改 HTML 结构、不改 JS、不改 font-family、不删任何类名
+       ================================================================ */
+
+    :root {
+      /* 毛玻璃更“实”：仍透出背景光影，但能作为文字的清晰垫底 */
+      --glass-bg: linear-gradient(148deg, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.66) 46%, rgba(255, 255, 255, 0.74) 100%);
+      --glass-blur: blur(26px) saturate(150%);
+      --glass-border: 1px solid rgba(255, 255, 255, 0.82);
+      --ink-strong: var(--ui-title);
+      --ink-body: var(--ui-body);
+      --ink-meta: var(--ui-sub);
+      --text-lift: 0 1px 2px rgba(255, 255, 255, 0.6);
+    }
+
+    /* 基础正文：字重 400 → 500，颜色再压深一档 */
+    body { font-weight: 500; color: #14313a; }
+
+    /* 标题统一 700（Tailwind preflight 让 h 继承字重，必须 !important 才能生效） */
+    h1, h2, h3, h4 { font-weight: 700 !important; }
+
+    /* ---------- Tailwind 文字色：去掉透明度后缀，换深色实色 ---------- */
+    .text-emerald-800 { color: #0d3b4a !important; }
+    .text-emerald-700 { color: #17545f !important; }
+    .text-emerald-700\/75,
+    .text-emerald-700\/80,
+    .text-emerald-700\/70 { color: #164a57 !important; }
+    .text-emerald-600\/85,
+    .text-emerald-600\/75,
+    .text-emerald-600\/70 { color: #1d5b63 !important; }
+    .text-teal-600 { color: #17796a !important; }
+    .text-orange-800 { color: #6d2c10 !important; }
+    .text-orange-700\/80,
+    .text-orange-600 { color: #7a3a14 !important; }
+
+    /* 小字号说明 / 标签文字：加深同时提字重 */
+    .text-xs, .text-sm { font-weight: 600; }
+
+    /* ---------- 导航栏 ---------- */
+    .nav {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.64));
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
+      border-bottom-color: rgba(255, 255, 255, 0.72);
+    }
+    .nav a { color: #12343f; font-weight: 600; }
+    .nav a:hover { color: #175f6b; }
+
+    /* ---------- 选项卡 ---------- */
+    #tabYbocs:not(.tab-active),
+    #tabSds:not(.tab-active) {
+      background: rgba(255, 255, 255, 0.74) !important;
+      color: #123f4b !important;
+      font-weight: 600 !important;
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      text-shadow: var(--text-lift);
+    }
+    .tab-active {
+      background: linear-gradient(135deg, #2a7784, var(--brand)) !important;
+      font-weight: 700 !important;
+    }
+
+    /* ---------- 选项卡片 ---------- */
+    .option-item {
+      background: rgba(255, 255, 255, 0.68) !important;
+      border-color: rgba(31, 96, 110, 0.26) !important;
+    }
+    .option-item:hover {
+      background: rgba(255, 255, 255, 0.84) !important;
+      border-color: rgba(31, 96, 110, 0.5) !important;
+    }
+    .option-item.selected {
+      background: rgba(213, 239, 242, 0.92) !important;
+      border-color: #1f6b78 !important;
+    }
+    .option-item span { color: #0d3b4a !important; }
+    .option-item span:first-child { font-weight: 700 !important; }
+    .option-item span:last-child { color: #1a525d !important; font-weight: 600 !important; }
+
+    /* ---------- 按钮 ---------- */
+    .btn-next { color: #ffffff !important; font-weight: 700 !important; }
+    #btnPrev { color: #17545f; font-weight: 600; }
+
+    /* ---------- 结果卡（原 bg-white/60 太透） ---------- */
+    [class*="bg-white/60"] {
+      background-color: rgba(255, 255, 255, 0.88) !important;
+      border-color: rgba(255, 255, 255, 0.95) !important;
+    }
+
+    /* ---------- 危机熔断提示（原橘色底过淡） ---------- */
+    [class*="border-orange-200"] {
+      background: linear-gradient(90deg, rgba(245, 120, 80, 0.30), rgba(230, 90, 60, 0.18)) !important;
+      backdrop-filter: blur(14px) !important;
+      -webkit-backdrop-filter: blur(14px) !important;
+      border-color: rgba(233, 138, 96, 0.65) !important;
+    }
+
+    /* ---------- 输入框 placeholder ---------- */
+    #aiMoodInput::placeholder,
+    textarea::placeholder,
+    input::placeholder { color: #4f7076; opacity: 1; font-weight: 500; }
+
+    /* ---------- 极淡白色衬底光：防止背景花纹吃掉字 ---------- */
+    .wrap p, .wrap h2, .wrap h3, .wrap span,
+    .custom-modal-box p, .custom-modal-box h3 { text-shadow: var(--text-lift); }
+
+    /* 禁用态的上一步按钮别淡到看不见 */
+    #btnPrev:disabled { opacity: 0.6 !important; }
+
+    /* ---------- 窄屏：导航不再逐字折行 ---------- */
+    @media (max-width: 600px) {
+      .nav { padding: 12px 12px; gap: 8px; }
+      .nav-link-group { gap: 0; flex-wrap: nowrap; min-width: 0; }
+      .nav a { margin: 0 5px; font-size: 14px; white-space: nowrap; flex: 0 0 auto; }
+      .btn-ai-companion { min-width: 0; padding: 8px 12px; font-size: 14px; }
+    }
+  
+    /* ================================================================
+       全局界面层（四页统一注入）
+       阅读进度条 / 悬浮胶囊导航 / 厚毛玻璃材质 / 滚动揭示
+       ================================================================ */
+    :root {
+      --ui-brand: #287480;
+      --ui-brand-deep: #1f5c66;
+      --ui-title: #062a35;
+      --ui-body: #14313a;
+      --ui-sub: #3a5b66;
+      --ui-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.90), rgba(255, 255, 255, 0.78));
+      --ui-border: 1px solid rgba(255, 255, 255, 0.9);
+      --ui-shadow: 0 24px 54px -26px rgba(23, 70, 88, 0.38), 0 6px 16px -12px rgba(23, 70, 88, 0.20), inset 0 2px 4px rgba(255, 255, 255, 0.9);
+      --ui-ease: cubic-bezier(0.22, 0.8, 0.3, 1);
+    }
+
+    /* ---------- 顶部阅读进度条 ---------- */
+    #readProgress {
+      position: fixed; top: 0; left: 0; height: 4px; width: 0;
+      background: linear-gradient(90deg, #2a7784, #4fb2ae 55%, #8fdcd6);
+      border-radius: 0 999px 999px 0;
+      box-shadow: 0 1px 8px rgba(40, 116, 128, 0.45);
+      z-index: 1400; pointer-events: none;
+      transition: width .1s linear;
+    }
+
+    /* ---------- 悬浮胶囊导航 ---------- */
+    .nav {
+      position: fixed !important;
+      top: 12px !important; left: 50% !important; right: auto !important;
+      width: auto !important; max-width: calc(100vw - 24px);
+      transform: translateX(-50%);
+      display: flex !important; align-items: center; gap: 6px;
+      padding: 8px 10px 8px 14px !important;
+      background: var(--ui-glass) !important;
+      backdrop-filter: blur(24px) saturate(150%) !important;
+      -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.92) !important;
+      border-radius: 999px !important;
+      box-shadow: 0 20px 46px -24px rgba(23, 70, 88, 0.45), 0 4px 12px -8px rgba(23, 70, 88, 0.22), inset 0 2px 4px rgba(255, 255, 255, 0.95) !important;
+      z-index: 1200 !important;
+    }
+    .nav-brand {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 2px 12px 2px 2px; margin-right: 2px;
+      text-decoration: none; border-right: 1px solid rgba(40, 116, 128, 0.16);
+    }
+    .nav-brand .nb-mark {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: grid; place-items: center;
+      background: radial-gradient(circle at 35% 28%, #ffffff, #d5eeee 72%);
+      color: #1b5561; font-size: 15px; font-weight: 700;
+      font-family: "SmileySans", "AliPuHui", sans-serif;
+      box-shadow: inset 0 1px 0 #fff, 0 8px 16px -10px rgba(23, 70, 88, 0.55);
+    }
+    .nav-brand .nb-name {
+      font-family: "SmileySans", "AliPuHui", sans-serif;
+      font-size: 17px; font-weight: 700; letter-spacing: 1.5px; color: #062a35;
+    }
+    .nav .nav-link-group { display: flex; align-items: center; gap: 0; }
+    .nav .nav-link-group a {
+      position: relative; margin: 0 2px !important; padding: 9px 14px;
+      border-radius: 999px; font-size: 15px; font-weight: 600;
+      color: #14343f !important; white-space: nowrap;
+      transition: color .25s var(--ui-ease), background .25s var(--ui-ease);
+    }
+    .nav .nav-link-group a::after {
+      content: ""; position: absolute; left: 50%; right: 50%; bottom: 4px; height: 2px; border-radius: 2px;
+      background: linear-gradient(90deg, #2a7784, #8fdcd6);
+      transition: left .34s var(--ui-ease), right .34s var(--ui-ease);
+    }
+    .nav .nav-link-group a:hover { color: #062a35 !important; }
+    .nav .nav-link-group a:hover::after { left: 20%; right: 20%; }
+    .nav .nav-link-group a.active { color: #0a4750 !important; background: rgba(40, 116, 128, 0.12); }
+    .nav .nav-link-group a.active::after { display: none; }
+    .nav .btn-ai-companion, .nav .btn-ai {
+      border-radius: 999px !important; padding: 9px 16px !important; min-width: 0 !important;
+      border: 1px solid rgba(240, 186, 120, 0.75) !important;
+      background: linear-gradient(135deg, #ffeacb, #ffcf99) !important;
+      color: #5c3a0e !important; font-weight: 700 !important;
+      box-shadow: 0 10px 22px -12px rgba(214, 144, 58, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -4px 8px -4px rgba(196, 124, 44, 0.45) !important;
+      transition: transform .26s var(--ui-ease), box-shadow .26s var(--ui-ease) !important;
+    }
+    .nav .btn-ai-companion:hover, .nav .btn-ai:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 26px -12px rgba(214, 144, 58, 0.9), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    }
+    .nav .btn-ai-companion:active, .nav .btn-ai:active { transform: scale(.96); }
+    .ai-float-window, .ai-window { right: 0 !important; }
+
+    /* ---------- 厚毛玻璃材质 ---------- */
+    .card, .glass-card, .hero-card, .erp-main-card, .erp-item-card, .reason-text,
+    .right-box, .role-card, .watercolor, .dashboard, .chart-card, .stage-current {
+      background: var(--ui-glass) !important;
+      backdrop-filter: blur(24px) saturate(150%) !important;
+      -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+      border: var(--ui-border) !important;
+      box-shadow: var(--ui-shadow) !important;
+    }
+
+    /* 去同质化：顶部高光丝 + 角落柔光 */
+    .card, .glass-card, .role-card, .right-box { position: relative; overflow: hidden; }
+    .card::before, .glass-card::before, .right-box::before {
+      content: ""; position: absolute; left: 18px; right: 18px; top: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95), transparent);
+      pointer-events: none;
+    }
+    .card::after, .glass-card::after {
+      content: ""; position: absolute; right: -40px; top: -60px; width: 150px; height: 150px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(143, 220, 214, 0.22), transparent 70%);
+      pointer-events: none;
+    }
+
+    /* ---------- 文本 ---------- */
+    body { color: var(--ui-body); }
+    h1, h2, h3, h4 { color: var(--ui-title); }
+    *, *::before, *::after { text-shadow: none !important; }
+    .card p, .glass-card p, .hero-card p, .erp-main-card p, .erp-item-card p,
+    .reason-text p, .right-box p, .role-card p { color: var(--ui-body) !important; font-weight: 500; }
+    .text-emerald-700\/75, .text-emerald-700\/80, .text-emerald-700\/70,
+    .text-emerald-600\/70, .text-emerald-600\/75 { color: var(--ui-body) !important; }
+
+    /* ---------- 滚动揭示 ---------- */
+    .rv { opacity: 0; transform: translateY(40px); transition: opacity .72s var(--ui-ease), transform .72s var(--ui-ease); }
+    .rv.in { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { .rv { opacity: 1 !important; transform: none !important; } }
+
+    /* ---------- 移动端导航 ---------- */
+    @media (max-width: 760px) {
+      .nav { top: 8px !important; gap: 2px; padding: 6px 8px 6px 10px !important; flex-wrap: nowrap !important; overflow: hidden; }
+      .nav-brand { padding-right: 8px; margin-right: 0; flex: 0 0 auto; }
+      .nav-brand .nb-name { display: none; }
+      .nav-brand .nb-mark { width: 26px; height: 26px; font-size: 14px; }
+      .nav .nav-link-group { flex: 0 1 auto; min-width: 0; flex-wrap: nowrap !important; }
+      .nav .nav-link-group a { padding: 7px 9px; font-size: 13.5px; margin: 0 !important; }
+      .nav .nav-link-group a:nth-child(2), .nav .nav-link-group a:nth-child(3) { display: none; }
+      .nav .btn-ai-companion, .nav .btn-ai { padding: 7px 11px !important; font-size: 13px; flex: 0 0 auto; }
+      .nav .btn-ai-companion .material-symbols-outlined, .nav .btn-ai .material-symbols-outlined { display: none; }
+    }
+
+    /* ================================================================
+       ★★★ 最终设计系统层 Final Design System（assessment.html）★★★
+       1. 全局暗色遮罩  2. 全宽毛玻璃导航  3. 统一 24px 卡片圆角
+       4. 正文深色高对比 #10333c / 字重 500
+       ================================================================ */
+    :root {
+      --ds-radius-card: 24px;
+      --ds-overlay: rgba(10, 30, 35, 0.15);
+      --ds-ink-body: #10333c;
+      --ds-ink-title: #062a35;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: var(--ds-overlay);
+      pointer-events: none;
+      z-index: -1;
+    }
+    .nav {
+      position: fixed !important;
+      top: 0 !important; left: 0 !important; right: 0 !important;
+      width: 100% !important; max-width: 100% !important;
+      transform: none !important;
+      border-radius: 0 !important;
+      border: none !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.55) !important;
+      padding: 12px 32px !important;
+      background: rgba(255, 255, 255, 0.62) !important;
+      backdrop-filter: blur(20px) saturate(150%) !important;
+      -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
+      box-shadow: 0 6px 24px -12px rgba(23, 70, 88, 0.28) !important;
+      z-index: 1200 !important;
+    }
+    .nav-brand { border-right: 1px solid rgba(40,116,128,0.18) !important; padding: 2px 16px 2px 2px !important; }
+    .nav .nav-link-group a { border-radius: 10px !important; padding: 8px 14px !important; }
+    .nav .btn-ai-companion, .nav .btn-ai { border-radius: 999px !important; }
+    .card, .glass-card, .watercolor, .right-box, .role-card, .dashboard, .chart-card {
+      border-radius: var(--ds-radius-card) !important;
+    }
+    body { color: var(--ds-ink-body) !important; font-weight: 500; }
+    h1, h2, h3, h4 { color: var(--ds-ink-title); font-weight: 700; }
+    .card p, .glass-card p, .watercolor p, .right-box p, .wrap p {
+      color: var(--ds-ink-body) !important; font-weight: 500;
+    }
+    @media (max-width: 760px) {
+      .nav { top: 0 !important; padding: 10px 14px !important; gap: 8px !important; }
+      .nav-brand .nb-name { display: inline !important; }
+    }
+  </style>
+  <script src="wc_track.js"></script>
+</head>
+<body>
+  <div id="readProgress"></div>
+  <div class="ambient"></div>
+
+  <header class="nav">
+    <a class="nav-brand" href="home.html"><span class="nb-mark">尘</span><span class="nb-name">微尘</span></a>
+    <div class="nav-link-group">
+      <a href="home.html">主页</a>
+      <a href="home.html#section-product">产品</a>
+      <a href="home.html#section-about">关于我们</a>
+      <a href="register.html">在线使用</a>
+    </div>
+    <button class="btn-ai-companion" onclick="toggleAiFloatWindow()">
+      <span class="material-symbols-outlined">chat_bubble</span>
+      AI陪伴
+    </button>
+    <div class="ai-float-window" id="aiFloatWindow">
+      <div class="ai-float-header">
+        <span class="material-symbols-outlined">smart_toy</span>
+        <strong>微尘 AI 助手</strong>
+        <span class="close-btn" onclick="toggleAiFloatWindow()">×</span>
+      </div>
+      <div class="ai-float-content">
+        <textarea id="aiMoodInput" placeholder="说说你的感受..."></textarea>
+        <button class="btn-send-ai" onclick="sendAiMood()">发送</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap mt-4">
+    <section class="mb-8 fade-enter">
+      <h2 class="text-[clamp(1.8rem,4vw,2.3rem)] font-bold text-emerald-800" style="font-family: 'SmileySans', sans-serif;">开始前，先轻轻看看自己</h2>
+      <p class="mt-2 text-emerald-700/75">
+        量表没有对错，只是帮助 AI 为你挑选合适的起点。全程约 2 分钟，可随时退出。
+      </p>
+    </section>
+
+    <!-- Tabs -->
+    <div class="flex gap-3 mb-6">
+      <button id="tabYbocs" class="tab-active px-6 py-2.5 rounded-full font-medium text-sm transition-colors" onclick="switchTab('ybocs')">
+        清洁困扰自评
+      </button>
+      <button id="tabSds" class="px-6 py-2.5 rounded-full font-medium text-sm bg-white/50 text-emerald-700 hover:bg-white/80 transition-colors" onclick="switchTab('sds')">
+        情绪状态自评
+      </button>
+    </div>
+
+    <!-- Main Card -->
+    <main class="watercolor rounded-[2.2rem] p-7 md:p-10 relative overflow-hidden">
+      <div class="mb-6">
+        <div class="flex justify-between text-sm text-emerald-700/80 mb-2 font-medium">
+          <span id="progressLabel">清洁困扰自评 · 1 / 6</span>
+        </div>
+        <div class="w-full h-2.5 rounded-full bg-emerald-100/50 overflow-hidden">
+          <div id="progressBar" class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500 ease-out" style="width:16%"></div>
+        </div>
+      </div>
+
+      <!-- Question -->
+      <div id="questionWrap" class="fade-enter">
+        <h3 id="questionText" class="text-2xl md:text-[clamp(1.35rem,3vw,1.65rem)] font-semibold text-emerald-800 leading-snug">
+          你每天花多少时间在强迫性想法上？（如：觉得脏、被污染）
+        </h3>
+
+        <div id="optionList" class="mt-7 flex flex-col gap-3.5">
+          <!-- injected by JS -->
+        </div>
+
+        <div class="mt-9 flex justify-between items-center">
+          <button id="btnPrev" class="px-5 py-2.5 rounded-xl border border-emerald-200 text-emerald-700 hover:bg-white/50 transition disabled:opacity-40 disabled:cursor-not-allowed font-medium" disabled>
+            上一题
+          </button>
+          <div class="text-xs text-emerald-600/70 max-w-[40%] text-center hidden md:block">
+            <span id="scaleNote">耶鲁‑布朗强迫量表，评估近一周强迫思维与行为的严重程度</span>
+          </div>
+          <button id="btnNext" class="btn-next px-8 py-2.5 rounded-xl text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none" disabled>下一题</button>
+        </div>
+      </div>
+
+      <!-- Result View -->
+      <div id="resultWrap" class="hidden text-center py-6 fade-enter">
+        <div class="w-16 h-16 mx-auto rounded-2xl bg-emerald-100 grid place-items-center text-emerald-600 text-3xl shadow-sm">
+          ✓
+        </div>
+        <h3 class="mt-5 text-2xl font-bold text-emerald-800" style="font-family: 'SmileySans', sans-serif;">评估完成，谢谢你的坦诚</h3>
+        <p class="mt-3 text-emerald-700/75 max-w-md mx-auto">
+          结果不会被贴上任何标签，只为帮你选择合适的训练强度。建议从低难度阶梯开始，让身体慢慢建立信心。
+        </p>
+
+        <div class="grid md:grid-cols-2 gap-5 mt-8">
+          <div class="rounded-2xl bg-white/60 border border-white p-6 shadow-sm">
+            <div class="text-[clamp(2.3rem,6vw,2.7rem)] font-bold text-emerald-700" id="scoreY">0 / 24</div>
+            <div class="mt-1 text-sm text-emerald-600/85">Y‑BOCS 强迫程度 · <span id="levelY">-</span></div>
+          </div>
+          <div class="rounded-2xl bg-white/60 border border-white p-6 shadow-sm">
+            <div class="text-[clamp(2.3rem,6vw,2.7rem)] font-bold text-teal-600" id="scoreS">0 / 15</div>
+            <div class="mt-1 text-sm text-emerald-600/85">SDS 情绪状态 · <span id="levelS">-</span></div>
+          </div>
+        </div>
+
+        <p class="mt-7 text-emerald-700/70 text-sm">
+          AI 已为你生成个性化方案：从「延迟洗手 1 分钟」开始，每日 1–2 次练习。
+        </p>
+
+       <button class="btn-next mt-8 px-10 py-3.5 rounded-2xl font-semibold shadow-md text-lg" onclick="location.href='training.html'">
+  进入今日训练 →
+</button>
+      </div>
+    </main>
+
+    <!-- 熔断提示 -->
+    <section class="mt-8 rounded-2xl p-5 border border-orange-200/60" style="background: linear-gradient(90deg, rgba(245, 120, 80, 0.12), rgba(230, 90, 60, 0.05)); backdrop-filter: blur(10px);">
+      <div class="flex gap-4 items-start">
+        <div class="w-7 h-7 rounded-full bg-orange-100 text-orange-600 grid place-items-center text-sm font-bold shrink-0">
+          !
+        </div>
+        <div>
+          <h4 class="font-semibold text-orange-800 text-[15px]">危机熔断提示</h4>
+          <p class="mt-1 text-orange-700/80 text-sm leading-relaxed">
+            若你的回答触发高危选项（如自伤、自杀意念），系统将立即暂停评估与训练，展示心理援助热线。你的安全永远排在第一位。
+          </p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- 自定义温和弹窗 -->
+  <div class="custom-modal-mask" id="customModal">
+    <div class="custom-modal-box">
+      <div id="modalIcon" class="text-4xl mb-3">🛡️</div>
+      <h3 id="modalTitle" class="text-lg font-bold text-emerald-800 mb-2">安全提醒</h3>
+      <p id="modalContent" class="text-emerald-700/80 text-sm leading-relaxed"></p>
+      <button class="btn-modal-close" onclick="closeModal()">我明白了</button>
+    </div>
+  </div>
+
+ <script>
+    const scales = {
+      ybocs: {
+        name: "清洁困扰自评（自编初筛）",
+        total: 6,
+        maxScore: 24,
+        note: "本项目自编的清洁/检查困扰初筛条目，用于自我观察，非临床诊断工具",
+        questions: [
+          { text: "你每天花多少时间在强迫性想法上？（如：觉得脏、被污染）", options: [{ label: "完全没有", val: 0 }, { label: "轻微", val: 1 }, { label: "中度", val: 2 }, { label: "严重", val: 3 }, { label: "极重", val: 4 }], risk: false },
+          { text: "这些想法反复出现时，你能多大程度上不去理会它们？", options: [{ label: "完全没有", val: 0 }, { label: "轻微", val: 1 }, { label: "中度", val: 2 }, { label: "严重", val: 3 }, { label: "极重", val: 4 }], risk: false },
+          { text: "强迫想法带来的痛苦或焦虑有多强烈？", options: [{ label: "完全没有", val: 0 }, { label: "轻微", val: 1 }, { label: "中度", val: 2 }, { label: "严重", val: 3 }, { label: "极重", val: 4 }], risk: false },
+          { text: "你抵抗这些强迫想法的努力有多少？", options: [{ label: "完全没有", val: 0 }, { label: "轻微", val: 1 }, { label: "中度", val: 2 }, { label: "严重", val: 3 }, { label: "极重", val: 4 }], risk: false },
+          { text: "强迫行为（反复清洗、检查、排序）占用了你多少时间？", options: [{ label: "完全没有", val: 0 }, { label: "轻微", val: 1 }, { label: "中度", val: 2 }, { label: "严重", val: 3 }, { label: "极重", val: 4 }], risk: false },
+          { text: "强迫行为对你的生活、社交或学习造成多大阻碍？", options: [{ label: "完全没有", val: 0 }, { label: "轻微", val: 1 }, { label: "中度", val: 2 }, { label: "严重", val: 3 }, { label: "极重", val: 4 }], risk: false },
+        ],
+        getLevel: (s) => {
+          if (s <= 7) return "几乎无 / 极轻";
+          if (s <= 15) return "轻中度";
+          if (s <= 21) return "中重度";
+          return "重度";
+        },
+      },
+      sds: {
+        name: "情绪状态自评（自编初筛）",
+        total: 5,
+        maxScore: 15,
+        note: "本项目自编的情绪状态条目，用于观察近期波动，非临床诊断工具",
+        questions: [
+          { text: "我感到情绪沮丧、郁闷", options: [{ label: "没有或很少", val: 0 }, { label: "少部分时间", val: 1 }, { label: "相当多时间", val: 2 }, { label: "绝大部分时间", val: 3 }], risk: false },
+          { text: "我一阵阵哭出来或觉得想哭", options: [{ label: "没有或很少", val: 0 }, { label: "少部分时间", val: 1 }, { label: "相当多时间", val: 2 }, { label: "绝大部分时间", val: 3 }], risk: false },
+          { text: "我夜间睡眠不好", options: [{ label: "没有或很少", val: 0 }, { label: "少部分时间", val: 1 }, { label: "相当多时间", val: 2 }, { label: "绝大部分时间", val: 3 }], risk: false },
+          { text: "我感到疲乏、无力", options: [{ label: "没有或很少", val: 0 }, { label: "少部分时间", val: 1 }, { label: "相当多时间", val: 2 }, { label: "绝大部分时间", val: 3 }], risk: false },
+          { text: "我有伤害自己的想法", options: [{ label: "没有或很少", val: 0 }, { label: "少部分时间", val: 1 }, { label: "相当多时间", val: 2 }, { label: "绝大部分时间", val: 3 }], risk: true },
+        ],
+        getLevel: (s) => {
+          if (s <= 4) return "稳定";
+          if (s <= 9) return "轻度波动";
+          if (s <= 12) return "中度情绪压力";
+          return "明显情绪困扰";
+        },
+      },
+    };
+
+    let state = { active: "ybocs", step: 0, answers: { ybocs: [], sds: [] } };
+
+    function switchTab(key) {
+      state.active = key;
+      state.step = 0;
+      if (window.WC) WC.track("tab_switch", { to: key });
+      render();
+
+      document.getElementById("tabYbocs").className = key === "ybocs" ? "tab-active px-6 py-2.5 rounded-full font-medium text-sm transition-colors" : "px-6 py-2.5 rounded-full font-medium text-sm bg-white/50 text-emerald-700 hover:bg-white/80 transition-colors";
+      document.getElementById("tabSds").className = key === "sds" ? "tab-active px-6 py-2.5 rounded-full font-medium text-sm transition-colors" : "px-6 py-2.5 rounded-full font-medium text-sm bg-white/50 text-emerald-700 hover:bg-white/80 transition-colors";
+    }
+
+    function selectOption(value) {
+      const scale = scales[state.active];
+      state.answers[state.active][state.step] = value;
+      if (window.WC) WC.answer(state.active + ":" + state.step, value, { scale: state.active, idx: state.step });
+
+      const q = scale.questions[state.step];
+      if(q.risk && value >= 2){
+        showModal("安全提醒", "系统检测到高危信号。如果你此刻很痛苦，请立刻拨打心理援助热线：400-161-9995。你的安全永远是第一位。", "🤍");
+        return;
+      }
+      render();
+      // ✅ 新增：选中后延迟自动进入下一题，220ms 留给选中高亮动画
+      setTimeout(()=>{
+        nextStep();
+      }, 220);
+    }
+
+    function nextStep(){
+      const scale = scales[state.active];
+      if(state.step < scale.total - 1){
+        state.step++;
+        render();
+      } else {
+        if(state.active === "ybocs"){
+          showModal("初筛完成", "是否继续填写情绪状态部分，以获得更全面的观察？", "🌱", true);
+        } else {
+          showFinalResult();
+        }
+      }
+    }
+
+    function showFinalResult() {
+      document.getElementById("questionWrap").classList.add("hidden");
+      document.getElementById("resultWrap").classList.remove("hidden");
+
+      const scoreY = sum(state.answers.ybocs);
+      const scoreS = sum(state.answers.sds);
+
+      document.getElementById("scoreY").textContent = `${scoreY} / ${scales.ybocs.maxScore}`;
+      document.getElementById("levelY").textContent = scales.ybocs.getLevel(scoreY);
+      document.getElementById("scoreS").textContent = `${scoreS} / ${scales.sds.maxScore}`;
+      document.getElementById("levelS").textContent = scales.sds.getLevel(scoreS);
+
+      // 1) 结果落地：写给训练页读，不再算完就丢
+      var payload = {
+        y: scoreY, s: scoreS,
+        levelY: scales.ybocs.getLevel(scoreY),
+        levelS: scales.sds.getLevel(scoreS),
+        ts: Date.now()
+      };
+      try { localStorage.setItem("weichen_assess_v1", JSON.stringify(payload)); } catch (e) {}
+      /* 每次打开本页只上报一次结果（避免重复触发被后端误判成后测） */
+      if (window.WC && !WC._assessLogged) {
+        WC._assessLogged = true;
+        WC.track("assess_final", payload);
+      }
+
+      // 2) 免责声明（动态插入，不改动原 DOM 结构）
+      if (!document.getElementById("wcDisclaimer")) {
+        var d = document.createElement("p");
+        d.id = "wcDisclaimer";
+        d.style.cssText = "margin-top:18px;font-size:12px;line-height:1.9;color:#4d6f68;text-align:left";
+        d.textContent = "本结果为项目自编条目的初筛参考，不是临床诊断，也不能替代专业评估。你的作答过程（每题用时、是否回头改答）会被记录用于本项目的方法学研究，不记录可识别身份的信息。";
+        document.getElementById("resultWrap").appendChild(d);
+      }
+    }
+
+    function prev() {
+      if (state.step > 0) {
+        if (window.WC) WC.track("item_revisit", { scale: state.active, from: state.step });
+        state.step--;
+        state.__fromPrev = true;
+      }
+      render();
+    }
+
+    function render() {
+      const scale = scales[state.active];
+      const q = scale.questions[state.step];
+      const selected = state.answers[state.active][state.step] ?? null;
+
+      document.getElementById("questionWrap").classList.remove("hidden");
+      document.getElementById("resultWrap").classList.add("hidden");
+
+      document.getElementById("progressLabel").textContent = `${scale.name} · ${state.step + 1} / ${scale.total}`;
+      document.getElementById("progressBar").style.width = `${(((state.step + 1) / scale.total) * 100).toFixed(1)}%`;
+
+      document.getElementById("questionText").textContent = q.text;
+      document.getElementById("scaleNote").textContent = scale.note;
+
+      document.getElementById("btnPrev").disabled = state.step === 0;
+      document.getElementById("btnNext").disabled = selected === null;
+
+      // 重建选项，带动画
+      const list = document.getElementById("optionList");
+      list.innerHTML = "";
+      
+      // 触发问题容器动画
+      const qWrap = document.getElementById("questionWrap");
+      qWrap.classList.remove("fade-enter");
+      void qWrap.offsetWidth; // 触发重绘
+      qWrap.classList.add("fade-enter");
+
+      q.options.forEach((opt) => {
+        const item = document.createElement("button");
+        item.className = "option-item w-full flex justify-between items-center px-5 py-4 rounded-2xl text-left bg-white/40";
+        if (selected === opt.val) item.classList.add("selected");
+
+        item.innerHTML = `
+          <span class="text-emerald-800 font-medium text-[15px]">${opt.label}</span>
+          <span class="text-emerald-600/75 text-sm">${opt.val} 分</span>
+        `;
+        item.onclick = () => selectOption(opt.val);
+        list.appendChild(item);
+      });
+
+      if (window.WC) WC.show(state.active + ":" + state.step, { scale: state.active, idx: state.step });
+    }
+
+    function sum(arr) {
+      return arr.reduce((acc, v) => acc + (Number.isFinite(v) ? v : 0), 0);
+    }
+
+    // 自定义弹窗逻辑
+    function showModal(title, content, icon="🛡️", isConfirm=false) {
+      document.getElementById("modalIcon").innerText = icon;
+      document.getElementById("modalTitle").innerText = title;
+      document.getElementById("modalContent").innerText = content;
+      
+      const btn = document.querySelector('.btn-modal-close');
+      if (isConfirm) {
+        btn.innerText = "继续填写情绪状态";
+        btn.onclick = function() {
+          closeModal();
+          switchTab("sds");
+        }
+      } else {
+        btn.innerText = "我明白了";
+        btn.onclick = closeModal;
+      }
+      
+      document.getElementById("customModal").classList.add("show");
+    }
+
+    function closeModal() {
+      document.getElementById("customModal").classList.remove("show");
+    }
+
+    // AI 弹窗
+    function toggleAiFloatWindow(){ document.getElementById("aiFloatWindow").classList.toggle("show"); }
+    function sendAiMood(){
+      const val = document.getElementById("aiMoodInput").value.trim();
+      if(!val) return;
+      alert("已记录（" + val.length + " 字）。这里只做情绪记录，不是对话分析。");
+      document.getElementById("aiMoodInput").value = "";
+    }
+
+    document.getElementById("btnNext").onclick = nextStep;
+    document.getElementById("btnPrev").onclick = prev;
+
+    render();
+  </script>

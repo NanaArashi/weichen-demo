@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>微尘 · 研究控制台</title>
+<style>
+  :root{
+    --bg:#0b0f0f; --card:#121817; --line:#1f2b29; --tx:#e6ecea; --dim:#8fa3a0;
+    --jade:#4f9e8a; --warn:#d9a566; --danger:#c4635f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);
+    font-family:"Microsoft YaHei UI","PingFang SC","Noto Sans SC",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:22px;letter-spacing:.5px;margin:0 0 6px;font-weight:600}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:26px}
+  .notice{border:1px solid var(--line);border-left:3px solid var(--warn);background:#141a19;
+    padding:12px 16px;border-radius:8px;font-size:13px;color:#cfc3ae;margin-bottom:26px;line-height:1.75}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .card h2{font-size:14px;margin:0 0 14px;color:var(--jade);letter-spacing:.4px;font-weight:600}
+  .kv{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px dashed #1a2422}
+  .kv:last-child{border:none}
+  .kv span:first-child{color:var(--dim)}
+  .kv span:last-child{color:var(--tx);font-variant-numeric:tabular-nums}
+  .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  button{border:1px solid var(--line);background:#16201e;color:var(--tx);font-size:13px;
+    padding:10px 18px;border-radius:8px;cursor:pointer;transition:.18s}
+  button:hover{border-color:var(--jade);color:#fff}
+  button.primary{background:var(--jade);border-color:var(--jade);color:#07110e;font-weight:600}
+  button.danger{border-color:#3a2624;color:#e0a09c}
+  button.danger:hover{border-color:var(--danger);background:#1d1413}
+  input,select{width:100%;background:#0e1413;border:1px solid var(--line);color:var(--tx);
+    padding:9px 12px;border-radius:8px;font-size:13px;outline:none}
+  input:focus,select:focus{border-color:var(--jade)}
+  label{display:block;font-size:12px;color:var(--dim);margin:12px 0 6px}
+  pre{background:#0d1211;border:1px solid var(--line);border-radius:8px;padding:14px;
+    font-size:12px;line-height:1.7;color:#b9cbc7;overflow:auto;max-height:280px;margin-top:14px}
+  .full{grid-column:1/-1}
+  .flow{font-size:12.5px;color:var(--dim);line-height:2}
+  .flow b{color:var(--jade)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>研究控制台</h1>
+  <div class="sub">微尘 · 行为数据采集自查 / 导出 · 仅研究者使用，请勿发给被试</div>
+
+  <div class="notice">
+    <b>上线前必读：</b>这个页面能让任何人改分组、清除数据。正式发给被试的版本请把它删掉，或放在需要口令的服务器目录里。本地试点阶段留着它没问题。
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>采集状态</h2>
+      <div id="health"></div>
+    </div>
+
+    <div class="card">
+      <h2>被试设置</h2>
+      <label>被试编号（如 WC001，绝不写真实姓名）</label>
+      <input id="pid" placeholder="WC001">
+      <label>实验组别</label>
+      <select id="arm">
+        <option value="">未分组（注册页会自动随机 A/B）</option>
+        <option value="A">A 组 · 柔性反馈（无打卡 / 无连续天数 / 无升级弹窗）</option>
+        <option value="B">B 组 · 游戏化反馈（打卡 + 连续天数 + 升级弹窗 + 图鉴入口）</option>
+        <option value="C">C 组 · 无进度反馈（仅先导探索，不进正式统计）</option>
+      </select>
+      <div class="btns">
+        <button class="primary" onclick="saveId()">保存并进入首页</button>
+        <button onclick="go('home.html')">直接进首页</button>
+      </div>
+    </div>
+
+    <div class="card full">
+      <h2>数据操作</h2>
+      <div class="btns">
+        <button class="primary" onclick="WC.download('all')">导出全部事件（JSONL）</button>
+        <button onclick="preview()">预览前 20 条</button>
+        <button onclick="WC.flush(false)">尝试上报到服务器</button>
+        <button onclick="checkServer()">查看服务器采集状态</button>
+        <button class="danger" onclick="clearAll()">清空本机数据（开始新被试前必点）</button>
+      </div>
+      <pre id="out">点「预览」看事件长什么样。</pre>
+    </div>
+
+    <div class="card full">
+      <h2>标准操作流程（每来一位被试照做）</h2>
+      <div class="flow">
+        1. 点 <b>清空本机数据</b>（防止上一位的数据混进这一位）<br>
+        2. 正式 A/B 两组：<b>组别留空</b>，注册页会按 50% 随机分配，不需要你人工指定<br>
+        3. C 组先导（8–12 人）才手动选 <b>C</b>，并在此前的第 1 步之后先选好<br>
+        4. 点 <b>保存并进入首页</b>，让被试自己从注册页开始走一遍<br>
+        5. 被试练完，点 <b>查看服务器采集状态</b> 确认数据已进库（页面显示条数在涨）<br>
+        6. 没有网络的现场，再退回 <b>导出全部事件</b> + 收 jsonl，命名如 <b>data/WC001_A.jsonl</b>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="wc_track.js"></script>
+<script>
+  WC.init({ page: "research" });
+
+  function render() {
+    var h = WC.health();
+    var rows = [
+      ["版本", h.version],
+      ["当前页面", h.page],
+      ["被试编号", h.pid],
+      ["组别", h.arm],
+      ["事件总数", h.events],
+      ["被标记条数", h.flagged],
+      ["本地占用", (h.localBytes / 1024).toFixed(1) + " KB"],
+      ["上报地址", h.endpoint],
+      ["首条时间", h.firstEventTime],
+      ["末条时间", h.lastEventTime]
+    ];
+    var html = rows.map(function (r) {
+      return '<div class="kv"><span>' + r[0] + '</span><span>' + r[1] + '</span></div>';
+    }).join("");
+    var types = h.types || {};
+    var t = Object.keys(types).map(function (k) { return k + " × " + types[k]; }).join("、") || "（还没有事件）";
+    html += '<div class="kv"><span>事件类型</span><span style="max-width:60%;text-align:right">' + t + '</span></div>';
+    document.getElementById("health").innerHTML = html;
+
+    var id = WC.health();
+    document.getElementById("pid").value = (id.pid === "(未绑定)" ? "" : id.pid);
+    document.getElementById("arm").value = (id.arm === "(未分组)" ? "" : id.arm);
+
+    /* 服务器采集状态：直接问后端 /api/health */
+    window.checkServer = function () {
+      var ep = (window.WC && WC.config && WC.config.endpoint) || "";
+      if (!ep) { document.getElementById("out").textContent = "当前是纯本地模式（wc_track.js 里 endpoint 为空）。\n数据只在本机 localStorage，用「导出全部事件」收走。"; return; }
+      var base = ep.replace(/\/api\/events$/i, "");
+      fetch(base + "/api/health").then(function (r) { return r.json(); }).then(function (h) {
+        document.getElementById("out").textContent =
+          "服务器： " + base + "\n被试数： " + h.n_participants + "（分组 " + JSON.stringify(h.by_arm) + "）\n" +
+          "题次（trials）： " + h.n_trials + "\n事件： " + h.n_events + "\n评估记录： " + h.n_assessments +
+          "\n完成练习： " + h.n_sessions;
+      }).catch(function (e) {
+        document.getElementById("out").textContent = "连不上服务器：" + e + "\n检查 app.py 是否在跑、endpoint 是否写对。";
+      });
+    };
+  }
+
+  function saveId() {
+    var p = document.getElementById("pid").value.trim();
+    var a = document.getElementById("arm").value;
+    if (!p) { alert("请先填被试编号，例如 WC001"); return; }
+    if (!a) { alert("请选择组别（A 或 B）。组别必须来自当面抓阄结果。"); return; }
+    WC.setPid(p); WC.setArm(a);
+    WC.track("subject_bound", { pid: p, arm: a });
+    go("home.html");
+  }
+
+  function go(u) { location.href = u; }
+
+  function preview() {
+    var arr = WC.dump().slice(-20);
+    document.getElementById("out").textContent = arr.length
+      ? arr.map(function (e) { return JSON.stringify(e); }).join("\n")
+      : "还没有任何事件。先去页面里点几下。";
+  }
+
+  function clearAll() {
+    if (!confirm("确定清空本机全部行为数据？此操作不可撤销（建议先导出）。")) return;
+    WC.clearAll();
+    try { localStorage.removeItem("weichen_training_v1"); } catch (e) {}
+    try { localStorage.removeItem("weichen_assess_v1"); } catch (e) {}
+    alert("已清空。可以接待下一位被试了。");
+    render();
+  }
+
+  render();
+  setInterval(render, 2000);
+</script>
+</body>
+</html>

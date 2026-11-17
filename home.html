@@ -1,0 +1,2168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <link rel="stylesheet" href="libs/material-symbols.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>微尘-陪伴安心生活</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23287480'/%3E%3Ccircle cx='32' cy='26' r='9' fill='%23e9f7f7'/%3E%3Cpath d='M14 50c6-10 12-14 18-14s12 4 18 14' fill='none' stroke='%23e9f7f7' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <!-- echarts 图表库 -->
+  <script src="libs/echarts.min.js"></script>
+  <style>
+    /* ========== 引入字体 ========== */
+    @font-face {
+      font-family: "SlideYouran";
+      src: url("fonts/slideyouran-Regular.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "HongLei";
+      src: url("fonts/honglei.otf") format("opentype");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "SmileySans";
+      src: url("fonts/smileysans.woff2") format("woff2");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "AliPuHui";
+      src: url("fonts/alipuhui.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    /*清除浏览器默认格式*/
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html {
+      /*基础平滑滚动，js做精确偏移*/
+      scroll-behavior: smooth;
+    }
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+    img {
+      display: block;
+      max-width: 100%;
+    }
+    button {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font: inherit;
+    }
+    /*全局正文字体*/
+    body {
+      font-family: "AliPuHui", sans-serif;
+      background-image: url("主页1bg.jpg");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      min-height: 100vh;
+      color: #283844;
+      font-weight: 400;
+      /*抗锯齿，解决文字发虚模糊*/
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    /*顶部固定导航栏【改为fixed，实现锚点计算偏移】*/
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 32px;
+      background-color: rgba(255,255,255,0.15);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 99;
+    }
+    .wrap {
+      padding-top:86px;
+    }
+    .nav-link-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav a {
+      margin: 0 10px;
+      font-weight: 500;
+      font-size: 16px;
+      color: #245060;
+    }
+    .nav a:hover{
+      color:#287480;
+    }
+    /* ========== AI陪伴按钮 ========== */
+    .btn-ai-companion {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 150px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 186, 110, 0.4);
+      background: rgba(255, 214, 165, 0.4);
+      backdrop-filter: blur(12px);
+      color: #7a5420;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.25s ease;
+    }
+    .btn-ai-companion:hover {
+      border-color: rgba(255, 174, 90, 0.55);
+      background: rgba(255, 200, 130, 0.55);
+    }
+    /* ========== AI悬浮弹窗 ========== */
+    .ai-float-window {
+      position: absolute;
+      top: calc(100% + 12px);
+      right: 32px;
+      width: 340px;
+      background: rgba(255, 251, 245, 0.97);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 186, 110, 0.4);
+      border-radius: 18px;
+      box-shadow:
+        0 12px 32px rgba(255, 170, 90, 0.18),
+        0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+      z-index: 100;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .ai-float-window::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 15% 0%, rgba(255, 200, 130, 0.22), transparent 28%),
+        radial-gradient(circle at 85% 100%, rgba(255, 180, 110, 0.18), transparent 32%);
+      pointer-events: none;
+      z-index: 0;
+      animation: dialogGlow 8s ease-in-out infinite alternate;
+    }
+    .ai-float-header,
+    .ai-float-content {
+      position: relative;
+      z-index: 1;
+    }
+    .ai-float-window.show {
+      display: flex;
+    }
+    .ai-float-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 18px;
+      background: linear-gradient(135deg, #ffd9a8, #ffc07a);
+      color: #7a4f18;
+    }
+    .ai-float-header .close-btn {
+      margin-left: auto;
+      font-size: 22px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .ai-float-content {
+      padding: 18px;
+    }
+    .ai-float-content p {
+      font-size: 16px;
+      color: #5a4020;
+      margin: 0 0 14px;
+      line-height: 1.6;
+      font-weight: 500;
+    }
+    #aiMoodInput {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 90px;
+      padding: 12px 14px;
+      border: 1px solid rgba(255, 186, 110, 0.45);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.85);
+      outline: none;
+      font-size: 16px;
+      resize: vertical;
+      color: #443018;
+      font-weight: 500;
+    }
+    #aiMoodInput:focus {
+      border-color: rgba(255, 174, 90, 0.7);
+      box-shadow: 0 0 0 3px rgba(255, 180, 110, 0.18);
+    }
+    .btn-send-ai {
+      width: 100%;
+      margin-top: 14px;
+      padding: 11px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #ffc98a, #ffa955);
+      color: #6b4212;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.25s ease;
+      box-shadow: 0 8px 18px rgba(255, 170, 90, 0.22);
+    }
+    .btn-send-ai:hover {
+      background: linear-gradient(135deg, #ffbc73, #ff9a3c);
+    }
+    @keyframes dialogGlow {
+      0% {
+        opacity: 0.7;
+        transform: translate(0, 0);
+      }
+      100% {
+        opacity: 1;
+        transform: translate(-0.3%, 0.2%);
+      }
+    }
+    /* 移动端适配 */
+    @media (max-width:768px) {
+      .nav {
+        flex-wrap: wrap;
+        padding: 14px 18px;
+      }
+      .ai-float-window {
+        width: calc(100vw - 36px);
+        right: 18px;
+      }
+    }
+    /* ========== 第一屏：重新调整字号和宽度 ========== */
+    .first_section {
+      width: 100%;
+      min-height: 100vh;
+      padding: 90px 24px 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+    .content-wrap {
+      width: 100%;
+      max-width: 1480px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: center;
+      margin: 0 auto;
+    }
+    .left1 {
+      padding: 10px 0 10px 20px;
+    }
+    .left1 .tag {
+      display: inline-block;
+      font-size: 16px;
+      letter-spacing: 3px;
+      color: #306777;
+      margin-bottom: 18px;
+      font-weight: 600;
+      opacity: 0.9;
+    }
+    .left1 h1 {
+      font-size: clamp(110px, 13vw, 160px);
+      font-weight: normal;
+      color: #3b7688;
+      margin-bottom: 14px;
+      line-height: 1;
+      letter-spacing: 4px;
+      font-family: "SlideYouran", sans-serif;
+    }
+    .left1 .slogan {
+      font-size: clamp(26px, 2.4vw, 34px);
+      font-weight: 600;
+      color: #123b5c;
+      margin-bottom: 28px;
+      font-family: "SmileySans", sans-serif;
+      line-height: 1.4;
+    }
+    .tags-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 36px;
+    }
+    .tags-row span {
+      font-size: 16px;
+      color: #143d57;
+      padding: 9px 16px;
+      background: rgba(255,255,255,0.3);
+      backdrop-filter: blur(6px);
+      border-radius: 999px;
+      border: 1px solid rgba(120, 152, 189, 0.45);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+    }
+    .icon-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.45);
+      border: 1px solid rgba(120, 152, 189, 0.4);
+      flex-shrink: 0;
+    }
+    .tags-row .icon-box .material-symbols-outlined {
+      font-size: 20px;
+      color: #2f6677;
+      margin: 0;
+    }
+    .tip-scroll {
+      font-size: 15px;
+      color: #384d5c;
+      animation: updown 2s ease-in-out infinite;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+    }
+    @keyframes updown {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(6px); }
+    }
+    /* 右侧说明卡片 */
+    .hero-card {
+      max-width: 640px;
+      width: 100%;
+      margin-left: auto;
+      line-height: 1.75;
+      color: #243542;
+      font-size: 17px;
+      font-weight: 500;
+      padding: 28px;
+      border: 1px solid rgba(180, 200, 220, 0.5);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.32);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 10px 28px rgba(120, 160, 200, 0.16);
+    }
+    .hero-card h3 {
+      font-size: 22px;
+      color: #0f3a5c;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+    }
+    .hero-card h3 .material-symbols-outlined {
+      font-size: 22px;
+      color: #2f6677;
+    }
+    .hero-card > p {
+      margin-bottom: 16px;
+    }
+    .hero-card .card-block {
+      margin: 18px 0;
+      padding: 18px;
+      background: rgba(255,255,255,0.28);
+      border-radius: 14px;
+      border: 1px solid rgba(120, 152, 189, 0.35);
+    }
+    .hero-card .card-block strong {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      color: #0f3a5c;
+      font-size: 19px;
+      font-weight: 700;
+    }
+    .hero-card .card-block strong .material-symbols-outlined {
+      font-size: 20px;
+      color: #2f6677;
+    }
+    .hero-card .card-block p {
+      font-size: 16px;
+      color: #243542;
+      line-height: 1.7;
+      font-weight: 500;
+    }
+    .btn-solid {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      margin-top: 20px;
+      padding: 12px 26px;
+      font-size: 17px;
+      font-weight: 700;
+      background: #287480;
+      color: #ffffff;
+      border-radius: 14px;
+      text-decoration: none;
+      border: none;
+      transition: 0.25s ease;
+    }
+    .btn-solid:hover {
+      background: #1f5c66;
+    }
+    .btn-solid .material-symbols-outlined {
+      font-size: 18px;
+      color: #fff;
+      margin-right: 4px;
+    }
+    /* ========== 第二屏 ========== */
+    .second_section {
+      min-height: auto;
+      padding: 40px 20px 70px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      box-sizing: border-box;
+    }
+    .section-title {
+      text-align: center;
+      margin-bottom: 28px;
+      padding: 0 16px;
+    }
+    .section-title .tag {
+      background: rgba(255, 255, 255, 0.5);
+      color: #256363;
+      padding: 7px 16px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 700;
+      display: inline-block;
+      margin-bottom: 14px;
+    }
+    .section-title h2 {
+      font-size: clamp(24px, 5vw, 34px);
+      color: #163838;
+      margin: 0 0 12px;
+      font-weight: 700;
+    }
+    .section-title p {
+      color: #0f2828;
+      font-size: 17px;
+      font-weight: 500;
+      line-height:1.65;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    .middle-interact {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      width: 100%;
+      max-width: 960px;
+    }
+    .card-wrap {
+      overflow: hidden;
+      width: 100%;
+      border-radius: 30px;
+    }
+    .card-list {
+      display: flex;
+      width: 100%;
+      transition: transform 0.45s ease;
+    }
+    .card {
+      flex: 0 0 100%;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.62);
+      backdrop-filter: blur(16px);
+      border-radius: 30px;
+      padding: 48px 36px;
+      text-align: center;
+      box-sizing: border-box;
+    }
+    .card .icon-box {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .card .icon-box img {
+      width: 38px;
+      height: 38px;
+      object-fit: contain;
+    }
+    .card h3 {
+      font-size: 24px;
+      color: #163838;
+      margin: 0 0 14px;
+      font-weight: 700;
+    }
+    .card > p {
+      color: #0f2828;
+      font-size: 17px;
+      line-height: 1.7;
+      margin: 0 0 20px;
+      font-weight: 500;
+    }
+    .tip {
+      display: inline-block;
+      background: rgba(255, 200, 200, 0.55);
+      color: #9b2c3f;
+      padding: 7px 16px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .arrow {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(10px);
+      color: #256363;
+      font-size: 20px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: 0.25s;
+      font-weight: 700;
+    }
+    .arrow:hover {
+      background: rgba(255, 255, 255, 0.92);
+    }
+    /* ========== 第三屏 ERP机制【id=section‑product 用于导航跳转】 ========== */
+    .third_section {
+      padding: 70px 24px;
+      max-width: 1480px;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+    .erp-row {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 36px;
+      align-items: stretch;
+    }
+    .erp-left .erp-main-card {
+      padding: 30px;
+      background: rgba(255,255,255,0.3);
+      backdrop-filter: blur(8px);
+      border-radius: 18px;
+      border: 1px solid rgba(180, 200, 220, 0.5);
+      box-shadow: 0 10px 28px rgba(120, 160, 200, 0.16);
+      line-height: 1.8;
+      color: #0f242c;
+      font-size: 17px;
+      font-weight: 500;
+      height: 100%;
+      box-sizing: border-box;
+    }
+    .erp-left h2 {
+      font-size: clamp(24px, 4vw, 32px);
+      color: #163838;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+    }
+    .erp-left .erp-main-card p {
+      margin-bottom: 14px;
+    }
+    .erp-left .erp-main-card strong.highlight-text {
+      color: #c13951;
+      font-weight: 700;
+    }
+    .erp-right {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .erp-right .erp-item-card {
+      padding: 22px;
+      background: rgba(255,255,255,0.28);
+      backdrop-filter: blur(8px);
+      border-radius: 16px;
+      border: 1px solid rgba(120,152,189,0.4);
+    }
+    .erp-item-card h3 {
+      font-size: 22px;
+      color: #0f3a5c;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+    .erp-item-card p {
+      color: #0f2828;
+      line-height: 1.7;
+      font-size: 16px;
+      font-weight: 500;
+    }
+    /* ========== 第四屏 ========== */
+    .fourth_section {
+      padding: 70px 24px 70px;
+      max-width: 1480px;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+    .box-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: center;
+    }
+    .reason-text h2 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 26px;
+      color: #163838;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+    .reason-text {
+      font-size: 17px;
+      color: #0f242c;
+      line-height: 1.8;
+      font-weight: 500;
+    }
+    .reason-pic img {
+      border-radius: 18px;
+      border: 1px solid rgba(180, 200, 220, 0.5);
+      box-shadow: 0 10px 28px rgba(120, 160, 200, 0.16);
+    }
+    .go-btn-wrap {
+      margin-top: 48px;
+      display: flex;
+      justify-content: flex-end;
+    }
+    .go-btn {
+      font-family: "SmileySans", sans-serif;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      font-size: 19px;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.35);
+      backdrop-filter: blur(8px);
+      border-radius: 14px;
+      text-decoration: none;
+      color: #163838;
+      border: 1px solid rgba(120, 152, 189, 0.45);
+      transition: 0.25s ease;
+    }
+    .go-btn:hover {
+      background: rgba(255, 255, 255, 0.5);
+    }
+    /* ========== 第五屏：AI大脑模块【id=section‑about，导航跳转目标】 ========== */
+    .fifth_section {
+      padding: 70px 24px 70px;
+      max-width: 1480px;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+    .glass-card {
+      background: rgba(255,255,255,0.32);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(180, 200, 220, 0.5);
+      border-radius: 18px;
+      padding:28px;
+      margin-bottom:20px;
+      box-shadow: 0 10px 28px rgba(120, 160, 200, 0.16);
+    }
+    .glass-card h3 {
+      font-size: 20px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color:#0f3a5c;
+    }
+    .glass-card p {
+      font-size: 16px;
+      color:#243542;
+      line-height:1.7;
+      font-weight:500;
+    }
+    .icon-small {
+      width:36px;
+      height:36px;
+      background: rgba(255,255,255,0.45);
+      border-radius:10px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      color:#256363;
+    }
+    .check-item {
+      display:flex;
+      align-items:flex-start;
+      gap:12px;
+      padding:14px 0;
+    }
+    .check-mark {
+      width:22px;
+      height:22px;
+      border-radius:50%;
+      background:rgba(255,255,255,0.45);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#256363;
+      flex-shrink:0;
+      margin-top:2px;
+    }
+    #barChart {
+      width:100%;
+      height:400px;
+      margin-top:16px;
+    }
+    .bottom-action {
+      text-align:center;
+      padding:20px 0 40px;
+    }
+    .go-btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 36px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #ffffff;
+      background: #287480;
+      border-radius: 14px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(40, 116, 128, 0.25);
+      transition: 0.25s ease;
+    }
+    .go-btn-primary:hover {
+      background: #1f5c66;
+      transform: translateY(-1px);
+    }
+    .footer-disclaimer {
+      width: 100%;
+      max-width: 1100px;
+      margin: 30px auto 0;
+      padding: 0 24px;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #384d5c;
+      font-weight: 400;
+      text-align: center;
+    }
+    /* ========== 统一图标辅助类 ========== */
+    .material-symbols-outlined {
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+    .tip-scroll .material-symbols-outlined {
+      font-size: 20px;
+      color: rgba(50, 90, 130, 0.85);
+    }
+    /* ========== 移动端适配 ========== */
+    @media (max-width: 1024px) {
+      .content-wrap {
+        grid-template-columns: 1fr;
+        gap: 36px;
+      }
+      .left1 {
+        padding: 0;
+        text-align: center;
+      }
+      .tags-row {
+        justify-content: center;
+      }
+      .tip-scroll {
+        justify-content: center;
+      }
+      .hero-card {
+        margin: 0 auto;
+      }
+      .erp-row {
+        grid-template-columns: 1fr;
+      }
+      .box-row {
+        grid-template-columns: 1fr;
+      }
+      .go-btn-wrap {
+        justify-content: center;
+      }
+      #barChart {
+        height: 320px;
+      }
+    }
+    @media (max-width: 768px) {
+      .first_section {
+        padding: 80px 16px 50px;
+      }
+      .left1 h1 {
+        font-size: 90px;
+      }
+      .left1 .slogan {
+        font-size: 24px;
+      }
+      .hero-card {
+        padding: 22px;
+      }
+      .card {
+        padding: 40px 22px;
+      }
+      .erp-left .erp-main-card {
+        padding: 22px;
+      }
+      .erp-item-card {
+        padding: 18px;
+      }
+      .glass-card {
+        padding: 22px;
+      }
+      #barChart {
+        height: 280px;
+      }
+    }
+    /* ========== 增强毛玻璃卡片可读性 ========== */
+    .glass-card {
+      background: rgba(200, 230, 235, 0.52) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.45) !important;
+      box-shadow:
+        0 8px 24px rgba(100, 150, 160, 0.12),
+        inset 0 0 30px rgba(255, 255, 255, 0.25);
+    }
+    .glass-card h3 {
+      color: #0f343b !important;
+    }
+    .glass-card p {
+      color: #1a3c44 !important;
+    }
+    .icon-small {
+      background: rgba(255, 255, 255, 0.6) !important;
+      color: #1f4e5f !important;
+    }
+    .check-item .check-mark {
+      background: rgba(255, 255, 255, 0.7) !important;
+      color: #1f4e5f !important;
+    }
+    #barChart {
+      background: rgba(255, 255, 255, 0.55);
+      border-radius: 14px;
+      padding: 10px;
+    }
+
+    /* ================================================================
+       可读性增强层（Readability Layer）
+       只覆写 颜色 / 字重 / 毛玻璃透明度 / placeholder
+       —— 不改 HTML 结构、不改 JS、不改 font-family、不删任何类名
+       ================================================================ */
+
+    /* 旧变量统一指向全局材质变量，避免多套色值并存 */
+    :root {
+      --ink-strong: var(--ui-title);
+      --ink-body: var(--ui-body);
+      --ink-sub: var(--ui-sub);
+      --text-lift: none; /* 文字阴影已全局移除 */
+    }
+
+    /* 基础正文：400 → 500 */
+    body { font-weight: 500; color: var(--ink-body); }
+
+    /* ---------- 导航栏 ---------- */
+    .nav {
+      background-color: rgba(255, 255, 255, 0.74);
+      backdrop-filter: blur(16px) saturate(150%);
+      -webkit-backdrop-filter: blur(16px) saturate(150%);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.7);
+      box-shadow: 0 8px 26px -20px rgba(23, 70, 88, 0.4);
+    }
+    .nav a { color: #12343f; font-weight: 600; }
+    .nav a:hover { color: #175f6b; }
+
+    /* ---------- 第一屏 ---------- */
+    .left1 .tag { color: #12414d; font-weight: 700; opacity: 1; text-shadow: var(--text-lift); }
+    .left1 h1 {
+      font-weight: 700;
+      color: #23596b;
+      text-shadow: 0 2px 12px rgba(255, 255, 255, 0.6);
+    }
+    .left1 .slogan { color: #0d3348; font-weight: 700; text-shadow: var(--text-lift); }
+    .tags-row span {
+      color: #0f3540; font-weight: 600;
+      background: rgba(255, 255, 255, 0.7);
+      border-color: rgba(96, 146, 166, 0.5);
+      text-shadow: var(--text-lift);
+    }
+    .icon-box { background: rgba(255, 255, 255, 0.68); border-color: rgba(96, 146, 166, 0.45); }
+    .tags-row .icon-box .material-symbols-outlined { color: #1c4a5c; }
+    .tip-scroll { color: #15333d; font-weight: 600; text-shadow: var(--text-lift); }
+    .tip-scroll .material-symbols-outlined { color: #1c4a5c; }
+
+    /* 右侧说明卡 */
+    .hero-card {
+      background: rgba(255, 255, 255, 0.76);
+      backdrop-filter: blur(16px) saturate(150%);
+      -webkit-backdrop-filter: blur(16px) saturate(150%);
+      border-color: rgba(255, 255, 255, 0.8);
+      color: #132f39;
+      box-shadow: 0 14px 34px -18px rgba(23, 70, 88, 0.35);
+    }
+    .hero-card h3 { color: #0c3542; font-weight: 700; }
+    .hero-card h3 .material-symbols-outlined,
+    .hero-card .card-block strong .material-symbols-outlined { color: #1c4a5c; }
+    .hero-card > p { font-weight: 500; color: #132f39; }
+    .hero-card .card-block {
+      background: rgba(255, 255, 255, 0.62);
+      border-color: rgba(150, 185, 200, 0.45);
+    }
+    .hero-card .card-block strong { color: #0c3542; font-weight: 700; }
+    .hero-card .card-block p { color: #132f39; font-weight: 500; }
+    .btn-solid { color: #ffffff; font-weight: 700; box-shadow: 0 12px 26px -14px rgba(40, 116, 128, 0.9); }
+
+    /* ---------- 第二屏 ---------- */
+    .section-title .tag { background: rgba(255, 255, 255, 0.8); color: #13545c; font-weight: 700; }
+    .section-title h2 { color: #0c3542; }
+    .section-title p { color: #14313a; font-weight: 500; }
+    .card { background: rgba(255, 255, 255, 0.82); backdrop-filter: blur(14px) saturate(150%); }
+    .card h3 { color: #0c3542; font-weight: 700; }
+    .card > p { color: #132f39; font-weight: 500; }
+    .tip { background: rgba(255, 196, 196, 0.85); color: #7f1d2e; font-weight: 700; }
+    .arrow { color: #17545f; background: rgba(255, 255, 255, 0.8); }
+
+    /* ---------- 第三屏 ERP ---------- */
+    .erp-left .erp-main-card {
+      background: rgba(255, 255, 255, 0.76);
+      backdrop-filter: blur(16px) saturate(150%);
+      -webkit-backdrop-filter: blur(16px) saturate(150%);
+      border-color: rgba(255, 255, 255, 0.8);
+      color: #0f2a33;
+      box-shadow: 0 14px 34px -18px rgba(23, 70, 88, 0.35);
+    }
+    .erp-left h2 { color: #0c3542; }
+    .erp-left .erp-main-card strong.highlight-text { color: #a32f45; font-weight: 700; }
+    .erp-right .erp-item-card {
+      background: rgba(255, 255, 255, 0.74);
+      backdrop-filter: blur(16px) saturate(150%);
+      -webkit-backdrop-filter: blur(16px) saturate(150%);
+      border-color: rgba(255, 255, 255, 0.78);
+    }
+    .erp-item-card h3 { color: #0c3542; }
+    .erp-item-card p { color: #16333c; font-weight: 500; }
+
+    /* ---------- 第四屏 ---------- */
+    .reason-text { color: #0f2a33; font-weight: 500; }
+    .reason-text h2 { color: #0c3542; }
+    .go-btn {
+      background: rgba(255, 255, 255, 0.76);
+      color: #0d3644;
+      border-color: rgba(96, 146, 166, 0.5);
+      font-weight: 700;
+    }
+    .go-btn:hover { background: rgba(255, 255, 255, 0.9); }
+
+    /* ---------- 第五屏 AI 大脑 ---------- */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.8) !important;
+      backdrop-filter: blur(18px) saturate(150%) !important;
+      -webkit-backdrop-filter: blur(18px) saturate(150%) !important;
+      border-color: rgba(255, 255, 255, 0.85) !important;
+      box-shadow: 0 12px 30px -18px rgba(23, 70, 88, 0.32), inset 0 0 30px rgba(255, 255, 255, 0.3);
+    }
+    .glass-card h3 { color: #0c3542 !important; font-weight: 700; }
+    .glass-card p { color: #14313a !important; font-weight: 500; }
+    .icon-small { background: rgba(255, 255, 255, 0.75) !important; color: #1a4859 !important; }
+    .check-item .check-mark { background: rgba(255, 255, 255, 0.8) !important; color: #1a4859 !important; }
+    .go-btn-primary { color: #ffffff; font-weight: 700; }
+    .footer-disclaimer { color: #2f4a56; font-weight: 500; }
+
+    /* ---------- AI 陪伴按钮与输入框 ---------- */
+    .btn-ai-companion {
+      background: linear-gradient(135deg, rgba(255, 234, 206, 0.9), rgba(255, 208, 156, 0.86));
+      color: #5e3d0e;
+      font-weight: 700;
+    }
+    .btn-ai-companion:hover { background: linear-gradient(135deg, rgba(255, 226, 188, 0.95), rgba(255, 198, 138, 0.92)); }
+    #aiMoodInput { color: #3d2a10; font-weight: 500; }
+    #aiMoodInput::placeholder,
+    textarea::placeholder,
+    input::placeholder { color: #6b5a3f; opacity: 1; font-weight: 500; }
+    .btn-send-ai { color: #4d2f0a; font-weight: 700; }
+
+    /* ================================================================
+       精修层 v2 · 统一色彩与材质
+       卡片 0.92 白底 / 无文字阴影 / 深色正文 / 16px+ 正文
+       ================================================================ */
+    /* 旧变量与全局材质变量对齐（保留别名以兼容既有规则） */
+    :root {
+      --brand: var(--ui-brand);
+      --title-ink: var(--ui-title);
+      --body-ink: var(--ui-body);
+      --sub-ink: var(--ui-sub);
+      --card-bg: rgba(255, 255, 255, 0.92);
+      --card-line: var(--ui-border);
+      --card-shadow: var(--ui-shadow);
+      --ease-out: var(--ui-ease);
+    }
+
+    /* 全面去除文字阴影 */
+    *, *::before, *::after { text-shadow: none !important; }
+
+    body {
+      font-size: 16.5px;
+      line-height: 1.8;
+      font-weight: 500;
+      color: var(--body-ink);
+    }
+    h1, h2, h3, h4 { color: var(--title-ink); }
+
+    /* ---------- 卡片统一材质 ---------- */
+    .card,
+    .glass-card,
+    .hero-card,
+    .erp-main-card,
+    .erp-item-card,
+    .reason-text {
+      background: var(--card-bg) !important;
+      backdrop-filter: blur(20px) saturate(150%) !important;
+      -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
+      border: var(--card-line) !important;
+      box-shadow: var(--card-shadow) !important;
+      color: var(--body-ink) !important;
+    }
+
+    /* 卡内层（hero 的说明块）：略低一档，仍保证清晰 */
+    .hero-card .card-block {
+      background: rgba(255, 255, 255, 0.86) !important;
+      border: 1px solid rgba(40, 116, 128, 0.14) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    }
+
+    /* ---------- 文字层级 ---------- */
+    .left1 h1 { color: var(--title-ink); font-weight: 700; }
+    .left1 .slogan { color: var(--body-ink); font-weight: 700; }
+    .left1 .tag { color: #123f47; font-weight: 700; opacity: 1; }
+    .tags-row span { color: var(--body-ink); font-weight: 600; background: rgba(255, 255, 255, 0.88); }
+    .tip-scroll { color: var(--body-ink); font-weight: 600; }
+    .section-title h2, .left1 h1, .erp-left h2, .reason-text h2 { color: var(--title-ink); }
+    .section-title p, .reason-text p { color: var(--body-ink); font-weight: 500; }
+
+    .hero-card h3,
+    .hero-card .card-block strong,
+    .card h3,
+    .erp-item-card h3,
+    .glass-card h3 { color: var(--title-ink) !important; }
+
+    .hero-card > p,
+    .hero-card .card-block p,
+    .card > p,
+    .card p,
+    .erp-main-card p,
+    .erp-item-card p,
+    .glass-card p,
+    .check-item p { color: var(--body-ink) !important; font-weight: 500; }
+
+    .erp-main-card strong.highlight-text { color: #9d2c40 !important; font-weight: 700; }
+    .footer-disclaimer { color: var(--sub-ink) !important; font-weight: 500; }
+    .tip { background: rgba(255, 196, 196, 0.9) !important; color: #7f1d2e !important; font-weight: 700; }
+
+    /* 正文最小 16px */
+    .hero-card > p,
+    .hero-card .card-block p,
+    .card > p,
+    .erp-item-card p,
+    .glass-card p,
+    .reason-text p,
+    .section-title p { font-size: 16.5px; line-height: 1.8; }
+
+    /* ---------- 首屏呼吸感与玉质阴影 ---------- */
+    .left1 h1 { margin-bottom: 16px; }
+    .left1 .slogan { margin-bottom: 26px; }
+    .tags-row { margin-bottom: 30px; }
+    .left1 .tag { margin-bottom: 18px; display: inline-block; }
+
+    .hero-card {
+      box-shadow:
+        0 1px 2px rgba(255, 255, 255, 0.9) inset,
+        0 -18px 40px -30px rgba(23, 70, 88, 0.35) inset,
+        0 18px 40px -22px rgba(23, 70, 88, 0.28),
+        0 42px 80px -40px rgba(23, 70, 88, 0.30),
+        0 0 0 1px rgba(255, 255, 255, 0.6) !important;
+      border-radius: 22px;
+    }
+    .hero-card:hover { box-shadow:
+        0 1px 2px rgba(255, 255, 255, 0.95) inset,
+        0 -18px 40px -28px rgba(23, 70, 88, 0.4) inset,
+        0 24px 52px -24px rgba(23, 70, 88, 0.32),
+        0 54px 96px -46px rgba(23, 70, 88, 0.34),
+        0 0 0 1px rgba(255, 255, 255, 0.7) !important;
+    }
+    .hero-card { transition: box-shadow .45s var(--ease-out), transform .45s var(--ease-out); }
+
+    /* ---------- 按钮悬浮态 ---------- */
+    .btn-solid, .go-btn, .go-btn-primary, .btn-ai-companion, .btn-send-ai {
+      transition: transform .25s var(--ease-out), box-shadow .25s var(--ease-out), background .25s var(--ease-out);
+    }
+    .btn-solid:hover {
+      transform: translateY(-2px);
+      background: #226b76;
+      box-shadow: 0 18px 32px -14px rgba(40, 116, 128, 0.85);
+    }
+    .go-btn {
+      color: var(--body-ink) !important;
+      font-weight: 700;
+      border-color: rgba(40, 116, 128, 0.32) !important;
+      background: rgba(255, 255, 255, 0.94) !important;
+    }
+    .go-btn:hover {
+      transform: translateY(-2px);
+      background: #ffffff !important;
+      box-shadow: 0 16px 30px -16px rgba(23, 70, 88, 0.4);
+    }
+    .go-btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 36px -16px rgba(40, 116, 128, 0.8);
+    }
+    .btn-ai-companion:hover { transform: translateY(-2px); }
+    .btn-send-ai:hover { transform: translateY(-2px); box-shadow: 0 16px 26px -14px rgba(200, 130, 50, 0.7); }
+
+    /* ---------- 图表配色向正文靠拢 ---------- */
+    #barChart { background: rgba(255, 255, 255, 0.9) !important; border-radius: 14px; padding: 10px; }
+
+    /* ---------- 第二屏图标位与第四屏阶梯示意 ---------- */
+    .card .icon-box {
+      background: radial-gradient(circle at 50% 32%, #ffffff, #e4f4f4 78%);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: inset 0 1px 0 #fff, 0 10px 24px -16px rgba(23, 70, 88, 0.4);
+    }
+    .card-glyph { font-size: 34px; color: #1f5c66; }
+    .reason-pic { display: flex; align-items: center; justify-content: center; }
+    .stair-figure {
+      width: 100%; max-width: 400px; height: auto;
+      padding: 12px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(40, 116, 128, 0.16);
+      box-shadow: 0 12px 32px -12px rgba(23, 70, 88, 0.15), inset 0 2px 4px rgba(255, 255, 255, 0.9);
+    }
+    .footer-disclaimer { font-size: 14px; line-height: 1.8; }
+
+    /* ================================================================
+       ERP 专业版介绍弹窗
+       ================================================================ */
+    .erp-modal-mask {
+      position: fixed; inset: 0; z-index: 1200;
+      display: flex; align-items: center; justify-content: center;
+      padding: 18px;
+      background: rgba(10, 34, 42, 0.46);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      opacity: 0; visibility: hidden;
+      transition: opacity .32s var(--ease-out), visibility .32s;
+    }
+    .erp-modal-mask.show { opacity: 1; visibility: visible; }
+
+    .erp-modal {
+      width: 100%; max-width: 760px;
+      max-height: 88vh;
+      display: flex; flex-direction: column;
+      background: rgba(255, 255, 255, 0.97);
+      backdrop-filter: blur(26px) saturate(150%);
+      -webkit-backdrop-filter: blur(26px) saturate(150%);
+      border: 1px solid rgba(255, 255, 255, 1);
+      border-radius: 24px;
+      box-shadow: 0 40px 90px -40px rgba(10, 34, 42, 0.5), inset 0 1px 0 #fff;
+      transform: scale(.94) translateY(14px);
+      opacity: 0;
+      transition: transform .38s var(--ease-out), opacity .32s var(--ease-out);
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .erp-modal-mask.show .erp-modal { transform: none; opacity: 1; }
+
+    .erp-modal-head {
+      position: sticky; top: 0; z-index: 3;
+      padding: 24px 24px 18px;
+      border-bottom: 1px solid rgba(40, 116, 128, 0.12);
+      background: linear-gradient(150deg, rgba(240, 252, 252, 0.98), rgba(255, 255, 255, 0.98));
+    }
+    .erp-modal-head .eyebrow {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 999px;
+      background: rgba(40, 116, 128, 0.12); color: #14495a;
+      font-size: 13px; font-weight: 700; letter-spacing: .3px;
+    }
+    .erp-modal-head h3 {
+      margin: 12px 0 0; font-size: clamp(20px, 4.4vw, 26px); line-height: 1.4;
+      color: var(--title-ink); font-weight: 700;
+    }
+    .erp-modal-head p { margin-top: 8px; font-size: 15.5px; line-height: 1.8; color: var(--sub-ink); font-weight: 500; }
+    .erp-modal-close {
+      position: absolute; top: 16px; right: 16px;
+      width: 40px; height: 40px; border-radius: 50%;
+      display: grid; place-items: center;
+      background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(40, 116, 128, 0.18);
+      color: #14495a; font-size: 20px; line-height: 1; cursor: pointer;
+      transition: transform .25s var(--ease-out), background .25s var(--ease-out);
+    }
+    .erp-modal-close:hover { transform: rotate(90deg); background: #fff; }
+
+    .erp-modal-body { padding: 22px 24px 8px; }
+    .erp-modal::-webkit-scrollbar { width: 7px; }
+    .erp-modal::-webkit-scrollbar-thumb { background: rgba(40, 116, 128, 0.28); border-radius: 999px; }
+
+    .erp-block { margin-bottom: 26px; }
+    .erp-block-title {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 17px; font-weight: 700; color: var(--title-ink);
+      margin-bottom: 12px;
+    }
+    .erp-block-title .orb {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: grid; place-items: center;
+      background: radial-gradient(circle at 50% 30%, #ffffff, #d9f0f0 80%);
+      box-shadow: 0 8px 18px -12px rgba(23, 70, 88, 0.5), inset 0 1px 0 #fff;
+      color: #1f5c66;
+    }
+    .erp-block-title .orb .material-symbols-outlined { font-size: 19px; }
+    .erp-block > p { font-size: 16px; line-height: 1.85; color: var(--body-ink); font-weight: 500; }
+
+    .erp-trio { display: grid; gap: 10px; margin-top: 14px; grid-template-columns: 1fr; }
+    .erp-trio .cell {
+      padding: 14px 16px; border-radius: 16px;
+      background: rgba(244, 252, 252, 0.95);
+      border: 1px solid rgba(40, 116, 128, 0.14);
+      box-shadow: inset 0 1px 0 #fff;
+    }
+    .erp-trio .cell b { display: flex; align-items: center; gap: 6px; font-size: 15.5px; color: var(--title-ink); font-weight: 700; }
+    .erp-trio .cell b .material-symbols-outlined { font-size: 17px; color: #287480; }
+    .erp-trio .cell span { display: block; margin-top: 6px; font-size: 14.5px; line-height: 1.75; color: var(--body-ink); font-weight: 500; }
+
+    .erp-compare { display: grid; gap: 10px; margin-top: 14px; }
+    .erp-col {
+      padding: 16px 18px; border-radius: 18px;
+      border: 1px solid rgba(40, 116, 128, 0.16);
+      background: rgba(248, 252, 252, 0.96);
+    }
+    .erp-col.pro {
+      background: linear-gradient(160deg, rgba(233, 250, 250, 0.98), rgba(255, 255, 255, 0.96));
+      border-color: rgba(40, 116, 128, 0.3);
+      box-shadow: 0 12px 28px -18px rgba(23, 70, 88, 0.4);
+    }
+    .erp-col h4 { margin: 0 0 4px; font-size: 16px; font-weight: 700; color: var(--title-ink); }
+    .erp-col .badge { display: inline-block; margin-bottom: 10px; font-size: 12.5px; font-weight: 700; color: #1f5c66; }
+    .erp-col .pro-badge { color: #7a4f14; }
+    .erp-col ul { margin: 0; padding-left: 0; list-style: none; }
+    .erp-col li { display: flex; gap: 8px; align-items: flex-start; font-size: 14.5px; line-height: 1.75; color: var(--body-ink); font-weight: 500; margin-top: 7px; }
+    .erp-col li .mk { flex: 0 0 auto; color: #287480; font-weight: 700; }
+
+    .erp-flow { display: grid; gap: 8px; margin-top: 14px; }
+    .erp-step {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 13px 15px; border-radius: 14px;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid rgba(40, 116, 128, 0.14);
+    }
+    .erp-step .num {
+      flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%;
+      display: grid; place-items: center;
+      background: #287480; color: #fff; font-size: 13px; font-weight: 700;
+    }
+    .erp-step b { display: block; font-size: 15px; color: var(--title-ink); font-weight: 700; }
+    .erp-step span { display: block; font-size: 14px; line-height: 1.7; color: var(--body-ink); font-weight: 500; }
+
+    .erp-note {
+      margin-top: 6px; padding: 14px 16px; border-radius: 14px;
+      background: rgba(255, 241, 236, 0.95);
+      border: 1px solid rgba(200, 120, 100, 0.22);
+      font-size: 14px; line-height: 1.8; color: #7f2f33; font-weight: 600;
+    }
+
+    .erp-modal-foot {
+      position: sticky; bottom: 0; z-index: 3;
+      padding: 16px 24px 20px;
+      border-top: 1px solid rgba(40, 116, 128, 0.12);
+      background: rgba(255, 255, 255, 0.98);
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .erp-modal-foot .ghost {
+      flex: 0 0 auto; padding: 12px 20px; border-radius: 14px;
+      background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(40, 116, 128, 0.24);
+      color: #14495a; font-weight: 700; font-size: 15px; cursor: pointer;
+      transition: transform .25s var(--ease-out), background .25s var(--ease-out);
+    }
+    .erp-modal-foot .ghost:hover { transform: translateY(-2px); background: #fff; }
+    .erp-modal-foot .primary {
+      flex: 1 1 220px; padding: 13px 24px; border-radius: 14px;
+      background: linear-gradient(135deg, #2a7784, #287480); color: #fff;
+      font-weight: 700; font-size: 16px; text-align: center; cursor: pointer;
+      border: none; box-shadow: 0 14px 28px -14px rgba(40, 116, 128, 0.85);
+      transition: transform .25s var(--ease-out), box-shadow .25s var(--ease-out);
+    }
+    .erp-modal-foot .primary:hover { transform: translateY(-2px); box-shadow: 0 20px 36px -14px rgba(40, 116, 128, 0.9); }
+
+    @media (min-width: 720px) {
+      .erp-trio { grid-template-columns: repeat(3, 1fr); }
+      .erp-compare { grid-template-columns: 1fr 1fr; }
+      .erp-flow { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ---------- 窄屏：导航不再逐字折行 ---------- */
+    @media (max-width: 600px) {
+      .nav { padding: 12px 12px; gap: 8px; }
+      .nav-link-group { gap: 0; flex-wrap: nowrap; min-width: 0; }
+      .nav a { margin: 0 5px; font-size: 14px; white-space: nowrap; flex: 0 0 auto; }
+      .btn-ai-companion { min-width: 0; padding: 8px 12px; font-size: 14px; }
+      .erp-modal { max-height: 92vh; border-radius: 20px; }
+      .erp-modal-head { padding: 20px 18px 16px; }
+      .erp-modal-body { padding: 18px 18px 6px; }
+      .erp-modal-foot { padding: 14px 18px 16px; }
+    }
+  
+    /* ================================================================
+       全局界面层（四页统一注入）
+       阅读进度条 / 悬浮胶囊导航 / 厚毛玻璃材质 / 滚动揭示
+       ================================================================ */
+    :root {
+      --ui-brand: #287480;
+      --ui-brand-deep: #1f5c66;
+      --ui-title: #062a35;
+      --ui-body: #14313a;
+      --ui-sub: #3a5b66;
+      --ui-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.90), rgba(255, 255, 255, 0.78));
+      --ui-border: 1px solid rgba(255, 255, 255, 0.9);
+      --ui-shadow: 0 24px 54px -26px rgba(23, 70, 88, 0.38), 0 6px 16px -12px rgba(23, 70, 88, 0.20), inset 0 2px 4px rgba(255, 255, 255, 0.9);
+      --ui-ease: cubic-bezier(0.22, 0.8, 0.3, 1);
+    }
+
+    /* ---------- 顶部阅读进度条 ---------- */
+    #readProgress {
+      position: fixed; top: 0; left: 0; height: 4px; width: 0;
+      background: linear-gradient(90deg, #2a7784, #4fb2ae 55%, #8fdcd6);
+      border-radius: 0 999px 999px 0;
+      box-shadow: 0 1px 8px rgba(40, 116, 128, 0.45);
+      z-index: 1400; pointer-events: none;
+      transition: width .1s linear;
+    }
+
+    /* ---------- 悬浮胶囊导航 ---------- */
+    .nav {
+      position: fixed !important;
+      top: 12px !important; left: 50% !important; right: auto !important;
+      width: auto !important; max-width: calc(100vw - 24px);
+      transform: translateX(-50%);
+      display: flex !important; align-items: center; gap: 6px;
+      padding: 8px 10px 8px 14px !important;
+      background: var(--ui-glass) !important;
+      backdrop-filter: blur(24px) saturate(150%) !important;
+      -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.92) !important;
+      border-radius: 999px !important;
+      box-shadow: 0 20px 46px -24px rgba(23, 70, 88, 0.45), 0 4px 12px -8px rgba(23, 70, 88, 0.22), inset 0 2px 4px rgba(255, 255, 255, 0.95) !important;
+      z-index: 1200 !important;
+    }
+    .nav-brand {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 2px 12px 2px 2px; margin-right: 2px;
+      text-decoration: none; border-right: 1px solid rgba(40, 116, 128, 0.16);
+    }
+    .nav-brand .nb-mark {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: grid; place-items: center;
+      background: radial-gradient(circle at 35% 28%, #ffffff, #d5eeee 72%);
+      color: #1b5561; font-size: 15px; font-weight: 700;
+      font-family: "SmileySans", "AliPuHui", sans-serif;
+      box-shadow: inset 0 1px 0 #fff, 0 8px 16px -10px rgba(23, 70, 88, 0.55);
+    }
+    .nav-brand .nb-name {
+      font-family: "SmileySans", "AliPuHui", sans-serif;
+      font-size: 17px; font-weight: 700; letter-spacing: 1.5px; color: #062a35;
+    }
+    .nav .nav-link-group { display: flex; align-items: center; gap: 0; }
+    .nav .nav-link-group a {
+      position: relative; margin: 0 2px !important; padding: 9px 14px;
+      border-radius: 999px; font-size: 15px; font-weight: 600;
+      color: #14343f !important; white-space: nowrap;
+      transition: color .25s var(--ui-ease), background .25s var(--ui-ease);
+    }
+    .nav .nav-link-group a::after {
+      content: ""; position: absolute; left: 50%; right: 50%; bottom: 4px; height: 2px; border-radius: 2px;
+      background: linear-gradient(90deg, #2a7784, #8fdcd6);
+      transition: left .34s var(--ui-ease), right .34s var(--ui-ease);
+    }
+    .nav .nav-link-group a:hover { color: #062a35 !important; }
+    .nav .nav-link-group a:hover::after { left: 20%; right: 20%; }
+    .nav .nav-link-group a.active { color: #0a4750 !important; background: rgba(40, 116, 128, 0.12); }
+    .nav .nav-link-group a.active::after { display: none; }
+    .nav .btn-ai-companion, .nav .btn-ai {
+      border-radius: 999px !important; padding: 9px 16px !important; min-width: 0 !important;
+      border: 1px solid rgba(240, 186, 120, 0.75) !important;
+      background: linear-gradient(135deg, #ffeacb, #ffcf99) !important;
+      color: #5c3a0e !important; font-weight: 700 !important;
+      box-shadow: 0 10px 22px -12px rgba(214, 144, 58, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -4px 8px -4px rgba(196, 124, 44, 0.45) !important;
+      transition: transform .26s var(--ui-ease), box-shadow .26s var(--ui-ease) !important;
+    }
+    .nav .btn-ai-companion:hover, .nav .btn-ai:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 26px -12px rgba(214, 144, 58, 0.9), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    }
+    .nav .btn-ai-companion:active, .nav .btn-ai:active { transform: scale(.96); }
+    .ai-float-window, .ai-window { right: 0 !important; }
+
+    /* ---------- 厚毛玻璃材质 ---------- */
+    .card, .glass-card, .hero-card, .erp-main-card, .erp-item-card, .reason-text,
+    .right-box, .role-card, .watercolor, .dashboard, .chart-card, .stage-current {
+      background: var(--ui-glass) !important;
+      backdrop-filter: blur(24px) saturate(150%) !important;
+      -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+      border: var(--ui-border) !important;
+      box-shadow: var(--ui-shadow) !important;
+    }
+
+    /* 去同质化：顶部高光丝 + 角落柔光 */
+    .card, .glass-card, .role-card, .right-box { position: relative; overflow: hidden; }
+    .card::before, .glass-card::before, .right-box::before {
+      content: ""; position: absolute; left: 18px; right: 18px; top: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95), transparent);
+      pointer-events: none;
+    }
+    .card::after, .glass-card::after {
+      content: ""; position: absolute; right: -40px; top: -60px; width: 150px; height: 150px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(143, 220, 214, 0.22), transparent 70%);
+      pointer-events: none;
+    }
+
+    /* ---------- 文本 ---------- */
+    body { color: var(--ui-body); }
+    h1, h2, h3, h4 { color: var(--ui-title); }
+    *, *::before, *::after { text-shadow: none !important; }
+    .card p, .glass-card p, .hero-card p, .erp-main-card p, .erp-item-card p,
+    .reason-text p, .right-box p, .role-card p { color: var(--ui-body) !important; font-weight: 500; }
+    .text-emerald-700\/75, .text-emerald-700\/80, .text-emerald-700\/70,
+    .text-emerald-600\/70, .text-emerald-600\/75 { color: var(--ui-body) !important; }
+
+    /* ---------- 滚动揭示 ---------- */
+    .rv { opacity: 0; transform: translateY(40px); transition: opacity .72s var(--ui-ease), transform .72s var(--ui-ease); }
+    .rv.in { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { .rv { opacity: 1 !important; transform: none !important; } }
+
+    /* ---------- 移动端导航 ---------- */
+    @media (max-width: 760px) {
+      .nav { top: 8px !important; gap: 2px; padding: 6px 8px 6px 10px !important; flex-wrap: nowrap !important; overflow: hidden; }
+      .nav-brand { padding-right: 8px; margin-right: 0; flex: 0 0 auto; }
+      .nav-brand .nb-name { display: none; }
+      .nav-brand .nb-mark { width: 26px; height: 26px; font-size: 14px; }
+      .nav .nav-link-group { flex: 0 1 auto; min-width: 0; flex-wrap: nowrap !important; }
+      .nav .nav-link-group a { padding: 7px 9px; font-size: 13.5px; margin: 0 !important; }
+      .nav .nav-link-group a:nth-child(2), .nav .nav-link-group a:nth-child(3) { display: none; }
+      .nav .btn-ai-companion, .nav .btn-ai { padding: 7px 11px !important; font-size: 13px; flex: 0 0 auto; }
+      .nav .btn-ai-companion .material-symbols-outlined, .nav .btn-ai .material-symbols-outlined { display: none; }
+    }
+
+    /* ========== 首页第一屏：错落排版与呼吸卡片 ========== */
+    .first_section { padding-top: 118px; }
+    .left1 .tag { transform: rotate(-2deg); display: inline-block; }
+    .left1 h1 { letter-spacing: 2px; margin-left: -8px; }
+    .left1 .slogan { max-width: 520px; }
+    .content-wrap { align-items: end; }
+
+    .hero-card {
+      border-radius: 40px 14px 40px 14px;
+      transform: rotate(-0.7deg) translateY(-10px);
+      transition: transform .5s var(--ui-ease), box-shadow .5s var(--ui-ease);
+      position: relative; overflow: hidden;
+    }
+    .hero-card::after {
+      content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+      background: radial-gradient(120% 80% at 12% 0%, rgba(143, 220, 214, 0.28), transparent 55%);
+      animation: heroBreath 9s ease-in-out infinite alternate;
+    }
+    @keyframes heroBreath {
+      from { opacity: .4; transform: scale(1); }
+      to { opacity: .95; transform: scale(1.06); }
+    }
+    .hero-card:hover { transform: rotate(0deg) translateY(-14px); }
+    .hero-card > * { position: relative; z-index: 1; }
+
+    /* 第二屏卡片配图 */
+    .card .icon-box {
+      display: block !important;
+      width: 100% !important; height: 168px !important;
+      margin: 0 0 16px !important;
+      border-radius: 16px !important;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.9) !important;
+      background: rgba(255, 255, 255, 0.7) !important;
+      box-shadow: 0 12px 26px -16px rgba(23, 70, 88, 0.5);
+    }
+    .card .icon-box img {
+      display: block; width: 100%; height: 100%;
+      object-fit: cover; object-position: center;
+    }
+
+    @media (max-width: 900px) {
+      .hero-card { transform: none; border-radius: 30px 12px 30px 12px; }
+      .content-wrap { align-items: center; }
+      .left1 h1 { margin-left: 0; }
+    }
+    @media (max-width: 600px) {
+      .card .icon-box { height: 200px !important; }
+    }
+
+    /* ================================================================
+       ★★★ 最终设计系统层 Final Design System（home.html）★★★
+       本层为最高优先级，统一覆盖：
+       1. 全局暗色遮罩 → 压暗水彩背景，护眼
+       2. 全宽毛玻璃导航 → 取消悬浮胶囊
+       3. 轮播图 1:1 正方形容器 → 图片不再变形
+       4. 所有卡片统一 24px 大圆角 + 毛玻璃
+       5. 正文深色高对比（#10333c，字重 500）
+       ================================================================ */
+    :root {
+      --ds-radius-card: 24px;
+      --ds-overlay: rgba(10, 30, 35, 0.15);
+      --ds-ink-body: #10333c;
+      --ds-ink-title: #062a35;
+    }
+
+    /* 1. 全局暗色遮罩：压亮花背景，文字立刻清晰 */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: var(--ds-overlay);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* 2. 全宽毛玻璃导航（覆盖悬浮胶囊） */
+    .nav {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      transform: none !important;
+      border-radius: 0 !important;
+      border: none !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.55) !important;
+      padding: 12px 32px !important;
+      background: rgba(255, 255, 255, 0.62) !important;
+      backdrop-filter: blur(20px) saturate(150%) !important;
+      -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
+      box-shadow: 0 6px 24px -12px rgba(23, 70, 88, 0.28) !important;
+      z-index: 1200 !important;
+    }
+    .nav-brand {
+      border-right: 1px solid rgba(40, 116, 128, 0.18) !important;
+      padding: 2px 16px 2px 2px !important;
+    }
+    .nav .nav-link-group a {
+      border-radius: 10px !important;
+      padding: 8px 14px !important;
+    }
+    .nav .btn-ai-companion, .nav .btn-ai { border-radius: 999px !important; }
+
+    /* 3. 轮播卡片配图：强制 1:1 正方形容器 + object-fit:cover */
+    .card .icon-box {
+      width: 100% !important;
+      height: auto !important;
+      aspect-ratio: 1 / 1 !important;
+      border-radius: 16px !important;
+    }
+    .card .icon-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    /* 4. 统一卡片 24px 大圆角（覆盖之前 18px/16px/异形圆角） */
+    .card, .glass-card, .hero-card, .erp-main-card, .erp-item-card,
+    .reason-text, .right-box, .role-card, .watercolor, .dashboard,
+    .chart-card, .stage-current {
+      border-radius: var(--ds-radius-card) !important;
+    }
+    /* hero-card 之前是异形圆角 40px 14px 40px 14px，统一为大圆角 */
+    .hero-card { border-radius: var(--ds-radius-card) !important; transform: none !important; }
+    .hero-card:hover { transform: translateY(-4px) !important; }
+    /* 第四屏 reason-text 之前是直角无内边距，补上卡片内边距 */
+    .reason-text { padding: 32px !important; }
+    /* 卡片毛玻璃底色略降不透明度，配合暗色遮罩更和谐 */
+    .card, .glass-card, .hero-card, .erp-main-card, .erp-item-card, .reason-text {
+      background: linear-gradient(135deg, rgba(255,255,255,0.82), rgba(255,255,255,0.72)) !important;
+    }
+
+    /* 5. 文字高对比：正文 #10333c，字重 500；标题 #062a35，字重 700 */
+    body { color: var(--ds-ink-body) !important; font-weight: 500; }
+    h1, h2, h3, h4 { color: var(--ds-ink-title); font-weight: 700; }
+    .card p, .glass-card p, .hero-card p, .erp-main-card p, .erp-item-card p,
+    .reason-text p, .right-box p, .role-card p, .section-title p, .hero-card > p {
+      color: var(--ds-ink-body) !important;
+      font-weight: 500;
+    }
+
+    /* 移动端：导航全宽贴顶，恢复 nb-name 显示避免拥挤 */
+    @media (max-width: 760px) {
+      .nav {
+        top: 0 !important;
+        padding: 10px 14px !important;
+        gap: 8px !important;
+      }
+      .nav-brand .nb-name { display: inline !important; }
+      .first_section { padding-top: 96px !important; }
+      .card .icon-box { aspect-ratio: 1 / 1 !important; height: auto !important; }
+      .reason-text { padding: 22px !important; }
+    }
+  </style>
+  <script src="wc_track.js"></script>
+</head>
+<body>
+  <div id="readProgress"></div>
+  <div class="wrap">
+    <header class="nav">
+    <a class="nav-brand" href="home.html"><span class="nb-mark">尘</span><span class="nb-name">微尘</span></a>
+      <div class="nav-link-group">
+        <a id="linkHome" href="#top">主页</a>
+        <a id="linkProduct" href="#section-product">产品</a>
+        <a id="linkAbout" href="#section-about">关于我们</a>
+        <a href="register.html">在线使用</a>
+      </div>
+      <button class="btn-ai-companion" onclick="toggleAiFloatWindow()">
+        <span class="material-symbols-outlined">chat_bubble</span>
+        AI陪伴
+      </button>
+      <div class="ai-float-window" id="aiFloatWindow">
+        <div class="ai-float-header">
+          <span class="material-symbols-outlined">smart_toy</span>
+          <strong>微尘 AI 助手</strong>
+          <span class="close-btn" onclick="toggleAiFloatWindow()">×</span>
+        </div>
+        <div class="ai-float-content">
+          <p>你好，我是微尘 AI 助手。无论你想分享心情，还是需要练习陪伴，都可以在这里告诉我。</p>
+          <textarea id="aiMoodInput" placeholder="说说你的感受..."></textarea>
+          <button class="btn-send-ai" onclick="sendAiMood()">发送</button>
+        </div>
+      </div>
+    </header>
+  </div>
+  <!-- 第一屏 -->
+  <div id="top" class="first_section">
+    <div class="content-wrap">
+      <div class="left1">
+        <span class="tag">WEI CHEN · 微尘</span>
+        <h1>微尘</h1>
+        <p class="slogan">通过练习得到不怕脏的勇气</p>
+        <div class="tags-row">
+          <span>
+            <span class="icon-box">
+              <span class="material-symbols-outlined">verified</span>
+            </span>
+            循证ERP
+          </span>
+          <span>
+            <span class="icon-box">
+              <span class="material-symbols-outlined">smart_toy</span>
+            </span>
+            AI动态陪伴
+          </span>
+          <span>
+            <span class="icon-box">
+              <span class="material-symbols-outlined">favorite</span>
+            </span>
+            温柔不强迫
+          </span>
+        </div>
+        <p class="tip-scroll">
+          <span class="material-symbols-outlined">arrow_downward</span>
+          向下滑动了解更多
+        </p>
+      </div>
+      <div class="hero-card" >
+        <h3><span class="material-symbols-outlined">psychology</span>一个陪你慢慢练习的空间</h3>
+        <p>世界上有很多人被清洁强迫困扰。不必为自己的痛苦感到羞愧——学会正视焦虑，正是改变的起点。</p>
+        <div class="card-block">
+          <strong><span class="material-symbols-outlined">description</span>项目介绍</strong>
+          <p>微尘是面向清洁型强迫群体的AI + ERP辅助训练工具，陪伴你循序渐进地练习，慢慢接纳不完美，与不安共处。</p>
+        </div>
+        <div class="card-block">
+          <strong><span class="material-symbols-outlined">group</span>面向人群</strong>
+          <p>受反复清洁、消毒、检查困扰的轻中度人群；也可在医师指导下，作为线下治疗的辅助工具。</p>
+        </div>
+        <button class="btn-solid" onclick="alert('成长曲线功能还在开发中，可以先在训练页的「我的变化」里看你的记录。')">
+          <span class="material-symbols-outlined">arrow_forward</span>开始在线使用
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- 第二屏 -->
+  <div class="second_section">
+    <div class="section-title">
+      <span class="tag">那些说不出口的循环</span>
+      <h2>你是不是也被困在这些时刻</h2>
+      <p>明明知道已经干净了，心里却仍有一个声音催促你“再来一次”。这是强迫循环。</p>
+    </div>
+    <div class="middle-interact">
+      <button class="arrow prev">←</button>
+      <div class="card-wrap">
+        <div class="card-list" id="secondCardList">
+          <div class="card">
+            <div class="icon-box">
+              <img src="反复洗手-配图.jpg" alt="反复洗手">
+            </div>
+            <h3>反复洗手</h3>
+            <p>手已经洗到发红脱皮，仍觉得“没洗够”，一次清洁可能持续数十分钟。</p>
+            <div class="tip">△ 日均 10 次以上</div>
+          </div>
+          <div class="card">
+            <div class="icon-box">
+              <img src="反复酒精消毒-配图.jpg" alt="反复酒精消毒">
+            </div>
+            <h3>反复酒精消毒</h3>
+            <p>手机、钥匙、门把手……物品必须逐一消毒，没带消毒喷雾就不敢出门。</p>
+            <div class="tip">△ 随身携带消毒用品</div>
+          </div>
+          <div class="card">
+            <div class="icon-box">
+              <img src="反复检查是否干净-配图.jpg" alt="反复检查是否干净">
+            </div>
+            <h3>反复检查是否干净</h3>
+            <p>反复回想、确认接触过的东西，直到精疲力竭仍无法获得“干净了”的确定感。</p>
+            <div class="tip">△ 确认后仍不安心</div>
+          </div>
+        </div>
+      </div>
+      <button class="arrow next">→</button>
+    </div>
+  </div>
+  <!-- 第三屏 ERP机制，id用于导航跳转 -->
+  <div id="section-product" class="third_section">
+    <div class="erp-row">
+      <div class="erp-left">
+        <div class="erp-main-card">
+          <span class="tag">一线循证干预</span>
+          <h2><span class="material-symbols-outlined">auto_awesome</span>ERP机制｜被证实有效的路径</h2>
+          <p>暴露与反应预防（Exposure & Response Prevention）是国际指南推荐的强迫症一线心理干预方式。</p>
+          <p>强迫的根源不是"脏"，而是<strong class="highlight-text">"我无法忍受这份焦虑"</strong>的想法。每一次清洗与检查，虽然能换来几分钟的轻松，却在向大脑反复确认：<strong class="highlight-text">"危险是真的。"</strong></p>
+          <p>ERP反其道而行：在安全、可承受的范围内，让你逐级面对引发焦虑的情境，同时暂缓清洗、检查等强迫行为。你会在练习中亲自发现——<strong class="highlight-text">焦虑不靠仪式行为，也会自己下降。</strong></p>
+          <p>微尘把这套需要医师陪伴的疗法，拆成每天20分钟、从家门到地铁的微小阶梯，并由AI守护你的每一次练习。</p>
+        </div>
+      </div>
+      <div class="erp-right">
+        <div class="erp-item-card">
+          <h3><span class="material-symbols-outlined">login</span>暴露</h3>
+          <p>主动接触令你焦虑的情境，从最容易承受的一阶开始，而不是硬扛。</p>
+        </div>
+        <div class="erp-item-card">
+          <h3><span class="material-symbols-outlined">verified</span>反应预防</h3>
+          <p>在约定时间内暂缓清洗与检查，让强迫循环失去<strong class="highlight-text">「缓解剂」</strong>。</p>
+        </div>
+        <div class="erp-item-card">
+          <h3><span class="material-symbols-outlined">trending_up</span>习惯化</h3>
+          <p>反复练习后，大脑对同一刺激的焦虑反应自然减弱，勇气由此生长。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- 第四屏 -->
+  <div class="fourth_section">
+    <div class="box-row">
+      <div class="reason-text">
+        <h2><span class="material-symbols-outlined">psychology</span>为什么微小阶梯会有用</h2>
+        <p>直接面对最大恐惧很容易直接被焦虑击溃，导致彻底放弃练习。微尘把大的恐惧拆成很小的台阶，你只需要完成“当下这一步”，不需要一步到位完全克服强迫。每一小步的成功，都会慢慢重建内心安全感。</p>
+        <div class="go-btn-wrap">
+          <button type="button" class="go-btn" onclick="openErpModal()">了解更多 →</button>
+        </div>
+      </div>
+      <div class="reason-pic">
+        <svg class="stair-figure" viewBox="0 0 340 210" role="img" aria-label="微小阶梯示意图">
+          <defs>
+            <linearGradient id="stairFill" x1="0" y1="1" x2="1" y2="0">
+              <stop offset="0%" stop-color="#bfe2e2"/>
+              <stop offset="100%" stop-color="#e9f7f7"/>
+            </linearGradient>
+            <linearGradient id="stairArc" x1="0" y1="1" x2="1" y2="0">
+              <stop offset="0%" stop-color="#287480" stop-opacity="0.35"/>
+              <stop offset="100%" stop-color="#287480" stop-opacity="0.9"/>
+            </linearGradient>
+          </defs>
+          <line x1="34" y1="180" x2="306" y2="180" stroke="#287480" stroke-opacity="0.25" stroke-dasharray="5 6"/>
+          <g fill="url(#stairFill)" stroke="#287480" stroke-opacity="0.35">
+            <rect x="34" y="152" width="56" height="28" rx="6"/>
+            <rect x="94" y="122" width="56" height="58" rx="6"/>
+            <rect x="154" y="92" width="56" height="88" rx="6"/>
+            <rect x="214" y="62" width="56" height="118" rx="6"/>
+          </g>
+          <path d="M40 150 C 120 120, 210 96, 296 34" stroke="url(#stairArc)" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+          <path d="M288 30 L 299 33 L 294 44" stroke="#287480" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <g font-size="12" font-weight="700" fill="#0d3b4a" text-anchor="middle">
+            <text x="62" y="171">1 分钟</text>
+            <text x="122" y="143">3 分钟</text>
+            <text x="182" y="113">5 分钟</text>
+            <text x="242" y="84">10 分钟</text>
+          </g>
+          <text x="34" y="30" font-size="12.5" font-weight="700" fill="#3a5b66">每一阶，只比上一阶难一点点</text>
+          <text x="34" y="48" font-size="12.5" font-weight="500" fill="#3a5b66">焦虑不会因为拖延而失控，它自己会下降</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <!-- ========== 第五屏：AI大脑 + 对比图表，id用于导航跳转 ========== -->
+  <div id="section-about" class="fifth_section">
+    <div class="section-title">
+      <span class="tag">AI 大脑</span>
+      <h2>微尘的 AI 大脑是如何工作的</h2>
+      <p>不是冰冷的算法，而是一个懂 ERP、也懂你此刻感受的陪伴者。</p>
+    </div>
+    <div class="glass-card">
+      <h3><span class="icon-small">💬</span>对话式意图识别</h3>
+      <p>用日常语言说出困扰，AI识别你所处的场景与强迫类型，把它翻译成适合你的训练任务。</p>
+    </div>
+    <div class="glass-card">
+      <h3><span class="icon-small">📈</span>动态难度推荐</h3>
+      <p>根据每次练习前后的焦虑评分，实时调整阶梯难度——太难就退一步，准备好了再向前。</p>
+    </div>
+    <div class="glass-card">
+      <h3><span class="icon-small">✨</span>情感陪伴与危机预警</h3>
+      <p>练习全程倾听你的情绪，发现高危信号时温柔停下，并给出求助通道。你永远是安全的。</p>
+    </div>
+    <div class="section-title" style="margin-top:60px;">
+      <span class="tag">为什么选择微尘</span>
+      <h2>一个人硬扛，不如被温柔地托住</h2>
+    </div>
+    <div class="glass-card">
+      <p style="font-weight:500;margin-bottom:16px;">阶梯式任务，从 1 分钟延迟开始，不与意志力较劲</p>
+      <div class="check-item">
+        <span class="check-mark">✓</span>
+        <p>AI 24 小时在线，焦虑来袭时不必独自等待</p>
+      </div>
+      <div class="check-item">
+        <span class="check-mark">✓</span>
+        <p>防次级强迫设计：不打卡、不排行、不制造新的焦虑</p>
+      </div>
+      <div class="check-item">
+        <span class="check-mark">✓</span>
+        <p>危机熔断机制，情绪安全永远排在训练前面</p>
+      </div>
+    </div>
+    <div class="glass-card">
+      <h3 style="font-size:17px;margin-bottom:12px;font-weight:500;">训练 8 周后 · 核心困扰程度对比（示例数据）</h3>
+      <div id="barChart"></div>
+    </div>
+    <div class="bottom-action">
+      <a href="register.html" class="go-btn-primary">迈出第一步 <span>→</span></a>
+      <p class="footer-disclaimer">微尘 WEI CHEN，数字辅助干预工具，不能替代专业诊断与治疗。如处于急性危机期请拨打心理援助热线 400‑161‑9995。</p>
+    </div>
+  </div>
+
+  <!-- ========== ERP 专业版介绍弹窗 ========== -->
+  <div class="erp-modal-mask" id="erpModalMask" onclick="onErpMaskClick(event)">
+    <div class="erp-modal" role="dialog" aria-modal="true" aria-labelledby="erpModalTitle">
+      <div class="erp-modal-head">
+        <span class="eyebrow"><span class="material-symbols-outlined" style="font-size:16px;">verified</span>ERP 专业版</span>
+        <h3 id="erpModalTitle">什么才是真正科学的 ERP</h3>
+        <p>不是“忍一忍就过去了”，而是一套有机制、有剂量、可回传的专业干预路径。</p>
+        <button class="erp-modal-close" onclick="closeErpModal()" aria-label="关闭">×</button>
+      </div>
+
+      <div class="erp-modal-body">
+        <div class="erp-block">
+          <div class="erp-block-title">
+            <span class="orb"><span class="material-symbols-outlined">science</span></span>
+            一、科学 ERP 的三个支点
+          </div>
+          <p>暴露与反应预防（Exposure &amp; Response Prevention）是国内外强迫症诊疗指南共同推荐的一线心理干预方式。它之所以有效，是因为同时做到了下面三件事。</p>
+          <div class="erp-trio">
+            <div class="cell">
+              <b><span class="material-symbols-outlined">login</span>暴露</b>
+              <span>在安全可控的范围内，主动接触引发焦虑的情境，从最轻的一阶开始，而不是硬扛最怕的那一步。</span>
+            </div>
+            <div class="cell">
+              <b><span class="material-symbols-outlined">block</span>反应预防</b>
+              <span>在约定时间内暂缓清洗、检查、反复确认，让强迫循环失去那个“立刻舒服一点”的缓解剂。</span>
+            </div>
+            <div class="cell">
+              <b><span class="material-symbols-outlined">trending_up</span>习惯化</b>
+              <span>反复练习后，大脑对同一刺激的焦虑反应自然衰减。你亲自验证：不洗手，焦虑也会自己降下来。</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="erp-block">
+          <div class="erp-block-title">
+            <span class="orb"><span class="material-symbols-outlined">compare_arrows</span></span>
+            二、自助版 vs 专业版：差在哪里
+          </div>
+          <p>自助版负责“开始”，专业版负责“推进”。两者共用同一套 ERP 阶梯与同一份记录，不会重复建账。</p>
+          <div class="erp-compare">
+            <div class="erp-col">
+              <h4>自助版 · 微尘免费版</h4>
+              <span class="badge">适合刚开始，或暂时无法就医</span>
+              <ul>
+                <li><span class="mk">·</span>六个阶梯任务，从 1 分钟延迟到地铁扶手，按记录自动解锁</li>
+                <li><span class="mk">·</span>练习前后焦虑自评，生成趋势曲线</li>
+                <li><span class="mk">·</span>AI 陪伴、白噪音、疗愈音乐与危机熔断</li>
+                <li><span class="mk">·</span>无监督、无处方，需要你自己把握节奏</li>
+              </ul>
+            </div>
+            <div class="erp-col pro">
+              <h4>专业版 · 医师联动</h4>
+              <span class="badge pro-badge">适合已在就诊，或需要参数化方案</span>
+              <ul>
+                <li><span class="mk">·</span>医师端定制暴露层级，逐阶设定停留时长与禁止行为</span></li>
+                <li><span class="mk">·</span>SUD 主观焦虑量表 + Y‑BOCS 结构化评估，自动生成曲线</span></li>
+                <li><span class="mk">·</span>练习中断、回避、仪式化动作会被记录为“安全行为预警”</span></li>
+                <li><span class="mk">·</span>复诊前一键导出周报，医生据此调整下一阶段剂量</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="erp-block">
+          <div class="erp-block-title">
+            <span class="orb"><span class="material-symbols-outlined">hub</span></span>
+            三、医师端联动的闭环
+          </div>
+          <p>专业版不是把 App 丢给你一个人，而是让医生、你、算法三方在同一条链上同步推进。</p>
+          <div class="erp-flow">
+            <div class="erp-step"><span class="num">1</span><div><b>评估建档</b><span>医师端录入 Y‑BOCS、诱发情境与既往治疗史，形成基线。</span></div></div>
+            <div class="erp-step"><span class="num">2</span><div><b>开具阶梯</b><span>按基线定制 6–12 阶暴露任务，标注每阶停留时长与禁止的仪式化行为。</span></div></div>
+            <div class="erp-step"><span class="num">3</span><div><b>日常练习</b><span>你在微尘里完成当阶练习，前后各记录一次焦虑值，全程可随时熔断。</span></div></div>
+            <div class="erp-step"><span class="num">4</span><div><b>数据回传</b><span>练习时长、完成率、焦虑下降幅度自动汇总，异常波动即时标记。</span></div></div>
+            <div class="erp-step"><span class="num">5</span><div><b>复诊调方</b><span>医师查看周报后上调、暂缓或回退阶梯，形成“评估—练习—再评估”的闭环。</span></div></div>
+          </div>
+          <div class="erp-note">微尘不提供诊断，也不替代面诊。专业版所有阶梯参数均由执业医师确认后下发；如处于急性危机期，请优先联系医疗机构或拨打心理援助热线 400‑161‑9995。</div>
+        </div>
+      </div>
+
+      <div class="erp-modal-foot">
+        <button class="ghost" onclick="closeErpModal()">先看看</button>
+        <button class="primary" onclick="location.href='register.html'">开始体验自助版 →</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========ERP 专业版介绍弹窗=========
+    function openErpModal() {
+      const mask = document.getElementById('erpModalMask');
+      mask.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeErpModal() {
+      const mask = document.getElementById('erpModalMask');
+      mask.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+    function onErpMaskClick(e) {
+      if (e.target === document.getElementById('erpModalMask')) closeErpModal();
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeErpModal();
+    });
+
+    // 屏幕二的轮播效果
+    const cardList = document.getElementById('secondCardList');
+    const prevBtn = document.querySelector('.prev');
+    const nextBtn = document.querySelector('.next');
+    const cardNum = document.querySelectorAll('#secondCardList .card').length;
+    let index = 0;
+    function updateSlide(){
+      cardList.style.transform = `translateX(-${index * 100}%)`;
+    }
+    nextBtn.onclick = ()=>{
+      index = (index + 1) % cardNum;
+      updateSlide();
+    };
+    prevBtn.onclick = ()=>{
+      index = (index - 1 + cardNum) % cardNum;
+      updateSlide();
+    };
+
+    // AI弹窗
+    function toggleAiFloatWindow() {
+      const win = document.getElementById('aiFloatWindow');
+      win.classList.toggle('show');
+    }
+    function sendAiMood() {
+      const input = document.getElementById('aiMoodInput');
+      const text = input.value.trim();
+      if(!text) {
+        alert('请先说说你的感受');
+        return;
+      }
+      if (window.WC) WC.track("ai_text_input", WC.textLen("home_mood", text));
+      alert('已记录（' + text.length + ' 字）。这里只做情绪记录，不做对话分析——它不是聊天机器人，也不会假装懂你。');
+      input.value = '';
+    }
+    document.addEventListener('click', function(e) {
+      const btn = document.querySelector('.btn-ai-companion');
+      const box = document.getElementById('aiFloatWindow');
+      if (!btn.contains(e.target) && !box.contains(e.target)) {
+        box.classList.remove('show');
+      }
+    });
+
+    // =========导航平滑滚动JS（处理fixed导航遮挡标题）=========
+    const navDom = document.querySelector('.nav');
+    const linkHome = document.getElementById('linkHome');
+    const linkProduct = document.getElementById('linkProduct');
+    const linkAbout = document.getElementById('linkAbout');
+
+    function scrollToTarget(selector){
+      const target = document.querySelector(selector);
+      if(!target) return;
+      const navHeight = navDom.offsetHeight;
+      const rect = target.getBoundingClientRect();
+      const scrollY = window.pageYOffset + rect.top - navHeight -20;
+      window.scrollTo({
+        top: scrollY,
+        behavior: "smooth"
+      })
+    }
+
+    linkHome.addEventListener('click',function(e){
+      e.preventDefault();
+      scrollToTarget("#top");
+    })
+    linkProduct.addEventListener('click',function(e){
+      e.preventDefault();
+      scrollToTarget("#section-product");
+    })
+    linkAbout.addEventListener('click',function(e){
+      e.preventDefault();
+      scrollToTarget("#section-about");
+    })
+
+    // 图表初始化
+    const chartDom = document.getElementById('barChart');
+    const myChart = echarts.init(chartDom);
+    const option = {
+        tooltip: { trigger: 'axis' },
+        legend: {
+            data: ['传统自助方式', '使用微尘8周'],
+            left: 'center',
+            textStyle:{color:'#0d3b4a', fontSize:13, fontWeight:600}
+        },
+        grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+        xAxis: {
+            type: 'category',
+            data: ['羞耻感','坚持难度','费用负担','复发焦虑','陪伴缺失'],
+            axisLabel:{color:'#0d3b4a', fontSize:12, fontWeight:600},
+            axisLine:{lineStyle:{color:'rgba(40,116,128,0.3)'}},
+            axisTick:{show:false}
+        },
+        yAxis: {
+            type: 'value',
+            max:100,
+            axisLabel:{color:'#0d3b4a', fontSize:12, fontWeight:600},
+            splitLine:{lineStyle:{color:'rgba(40,116,128,0.12)', type:'dashed'}}
+        },
+        series: [
+            {
+                name:'传统自助方式',
+                type:'bar',
+                data:[78,72,86,70,79],
+                itemStyle:{color:'#b8c9d1'}
+            },
+            {
+                name:'使用微尘8周',
+                type:'bar',
+                data:[34,39,22,42,26],
+                itemStyle:{color:'#287480'}
+            }
+        ]
+    };
+    myChart.setOption(option);
+    window.addEventListener('resize',()=>myChart.resize());
+  </script>
+
+<script>
+(function () {
+  /* 顶部阅读进度条 */
+  var bar = document.getElementById('readProgress');
+  function paint() {
+    var d = document.documentElement;
+    var max = d.scrollHeight - window.innerHeight;
+    var y = window.pageYOffset || d.scrollTop || 0;
+    var pct = max > 0 ? (y / max) * 100 : 100;
+    if (bar) bar.style.width = (pct < 0 ? 0 : pct > 100 ? 100 : pct).toFixed(2) + '%';
+  }
+  window.addEventListener('scroll', paint, { passive: true });
+  window.addEventListener('resize', paint);
+  window.addEventListener('load', paint);
+  paint();
+
+  /* 当前页高亮 */
+  var file = (location.pathname.split('/').pop() || 'home.html').toLowerCase();
+  var mine = file.indexOf('register') === 0 ? 'register'
+           : file.indexOf('assessment') === 0 ? 'assessment'
+           : file.indexOf('training') === 0 ? 'training' : 'home';
+  [].slice.call(document.querySelectorAll('.nav .nav-link-group a')).forEach(function (a) {
+    var href = (a.getAttribute('href') || '').toLowerCase();
+    var target = href.indexOf('register') >= 0 ? 'register'
+               : href.indexOf('assessment') >= 0 ? 'assessment'
+               : href.indexOf('training') >= 0 ? 'training' : 'home';
+    if (mine === target || (mine === 'assessment' && target === 'register')) a.classList.add('active');
+  });
+
+  /* 滚动揭示 */
+  var SEL = '.card,.glass-card,.hero-card,.erp-main-card,.erp-item-card,.reason-text,.reason-pic,'
+          + '.section-title,.left1,.right-box,.left-box,.role-selector,.role-card,.dashboard,'
+          + '.chart-card,.stage,.stage-current,.stage-locked,.tile,.practice-head,.page-head,'
+          + '.box-row,.bottom-action,.watercolor,.reveal';
+  var nodes = [].slice.call(document.querySelectorAll(SEL)).filter(function (n) {
+    return !n.closest('.nav, .ai-window, .ai-float-window, .erp-modal-mask, .mask, .modal');
+  });
+
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!('IntersectionObserver' in window) || reduce) {
+    nodes.forEach(function (n) { n.classList.add('in'); });
+    return;
+  }
+
+  var seen = new Map();
+  nodes.forEach(function (n) {
+    n.classList.add('rv');
+    var k = n.parentNode;
+    var idx = seen.get(k) || 0;
+    seen.set(k, idx + 1);
+    n.style.transitionDelay = Math.min(idx * 70, 280) + 'ms';
+  });
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+
+  nodes.forEach(function (n) { io.observe(n); });
+})();
+</script>
+
+<script>if (window.WC) WC.init({ page: "home" });</script>
+</body>
+</html>
